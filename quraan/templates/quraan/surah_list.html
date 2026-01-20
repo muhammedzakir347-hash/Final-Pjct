@@ -25,7 +25,7 @@
       <div class="card-row">
         <div class="card-avatar">
           {% if s.image %}
-            <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+            <img src="{{ s.get_image_url }}" alt="{% t request s 'name' %}">
           {% else %}
             <span class="avatar-text">{{ s.name_en|slice:":1" }}</span>
           {% endif %}

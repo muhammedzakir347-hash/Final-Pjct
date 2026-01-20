@@ -12,7 +12,7 @@
     <div class="card">
       {% if r.image %}
         <div class="card-media">
-          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+          <img src="{{ r.get_image_url }}" alt="{% t request r 'name' %}">
           <div class="play-overlay">
             <a class="play-btn" href="{% url 'reciter_detail' r.id %}">Open</a>
           </div>
@@ -38,7 +38,7 @@
 
       {% if s.image %}
         <div class="card-media">
-          <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+          <img src="{{ s.get_image_url }}" alt="{% t request s 'name' %}">
           <div class="play-overlay">
             <a class="play-btn" href="{% url 'surah_detail' s.id %}">Open</a>
           </div>

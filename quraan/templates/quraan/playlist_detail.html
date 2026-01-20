@@ -35,7 +35,7 @@
       
       {% if item.recitation.surah.image %}
         <div class="card-media" style="position:relative;">
-          <img src="{{ item.recitation.surah.image.url }}" alt="{% t request item.recitation.surah 'name' %}" style="width:100%;border-radius:8px;">
+          <img src="{{ item.recitation.surah.get_image_url }}" alt="{% t request item.recitation.surah 'name' %}" style="width:100%;border-radius:8px;">
           <div class="play-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
             <a class="play-btn" href="#" data-play-one
                data-audio="{{ item.recitation.audio_file.url }}"

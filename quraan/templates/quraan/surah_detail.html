@@ -10,7 +10,7 @@
 <div class="surah-header">
   {% if surah.image %}
     <div class="surah-image">
-      <img src="{{ surah.image.url }}" alt="{% t request surah 'name' %}">
+      <img src="{{ surah.get_image_url }}" alt="{% t request surah 'name' %}">
     </div>
   {% endif %}
 
@@ -47,7 +47,7 @@
 
     {% if surah.image %}
     <div class="card-media">
-      <img src="{{ surah.image.url }}" alt="{% t request surah 'name' %}">
+      <img src="{{ surah.get_image_url }}" alt="{% t request surah 'name' %}">
       <div class="play-overlay">
         <a href="#"
            data-play-one

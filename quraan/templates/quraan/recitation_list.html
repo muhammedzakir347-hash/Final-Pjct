@@ -116,7 +116,7 @@
             <!-- Card Media -->
             {% if rec.surah.image %}
               <div class="card-media">
-                <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
+                <img src="{{ rec.surah.get_image_url }}" alt="{% t request rec.surah 'name' %}">
                 <div class="play-overlay">
                   <button class="btn btn-primary play-btn"
                           data-play-one

@@ -21,7 +21,7 @@
 
       {% if s.image %}
         <div class="card-media">
-          <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+          <img src="{{ s.get_image_url }}" alt="{% t request s 'name' %}">
         </div>
       {% endif %}
 
@@ -47,7 +47,7 @@
 
       {% if r.image %}
         <div class="card-media">
-          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+          <img src="{{ r.get_image_url }}" alt="{% t request r 'name' %}">
         </div>
       {% endif %}
 
@@ -91,7 +91,7 @@
 
       {% if rec.surah.image %}
         <div class="card-media">
-          <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
+          <img src="{{ rec.surah.get_image_url }}" alt="{% t request rec.surah 'name' %}">
         </div>
       {% endif %}
 

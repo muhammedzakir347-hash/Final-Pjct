@@ -35,7 +35,7 @@ Juz {{ juz.number }} | Islamic Web
     <div class="card">
       {% if r.surah.image %}
         <div class="card-media">
-          <img src="{{ r.surah.image.url }}" alt="{% t request r.surah 'name' %}">
+          <img src="{{ r.surah.get_image_url }}" alt="{% t request r.surah 'name' %}">
           <div class="play-overlay">
             <a class="play-btn"
                href="#"

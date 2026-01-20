@@ -16,13 +16,13 @@ from .forms import BulkTextForm
 
 
 def home(request):
-    surahs = Surah.objects.prefetch_related("recitation_set").all()
+    surahs = Surah.objects.prefetch_related("recitations").all()
     reciters = Reciter.objects.all().order_by("name_en")[:8]  # show top 8
     return render(request, "quraan/home.html", {"surahs": surahs,"reciters": reciters,})
 
 
 def surah_list(request):
-    surahs = Surah.objects.prefetch_related("recitation_set").all()
+    surahs = Surah.objects.prefetch_related("recitations").all()
     return render(request, "quraan/surahs.html", {"surahs": surahs})
 
 

@@ -9,7 +9,7 @@
 <div class="reciter-header">
   {% if reciter.image %}
     <div class="reciter-image">
-      <img src="{{ reciter.image.url }}" alt="{% t request reciter 'name' %}">
+      <img src="{{ reciter.get_image_url }}" alt="{% t request reciter 'name' %}">
     </div>
   {% endif %}
 
@@ -44,7 +44,7 @@
     <div class="card recitation-card"> <!-- Added recitation-card class -->
       {% if r.surah.image %}
         <div class="card-media">
-          <img src="{{ r.surah.image.url }}" alt="{% t request r.surah 'name' %}">
+          <img src="{{ r.surah.get_image_url }}" alt="{% t request r.surah 'name' %}">
           <div class="play-overlay">
             <a class="play-btn"
                href="#"
