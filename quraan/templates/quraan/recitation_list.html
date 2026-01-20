@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% load static %}
+{% load lang %}
+
+{% block title %}Recitations | Islamic Web{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Recitations</h1>
+    <p class="page-subtitle">Browse and filter Quran recitations</p>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="filter-card">
+    <div class="filter-card-header">
+      <h3 class="filter-card-title">Filter Recitations</h3>
+      {% if selected_surah or selected_reciter or selected_juz %}
+        <a href="{% url 'recitation_list' %}" class="filter-reset">Reset Filters</a>
+      {% endif %}
+    </div>
+    
+    <form method="get" class="filter-form">
+      <div class="filter-grid">
+        <!-- Surah Filter -->
+        <div class="filter-group">
+          <label class="filter-label" for="surah">Surah</label>
+          <select class="filter-select" id="surah" name="surah">
+            <option value="">All Surahs</option>
+            {% for s in surahs %}
+              <option value="{{ s.id }}" {% if selected_surah == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s.number }} - {% t request s "name" %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Reciter Filter -->
+        <div class="filter-group">
+          <label class="filter-label" for="reciter">Reciter</label>
+          <select class="filter-select" id="reciter" name="reciter">
+            <option value="">All Reciters</option>
+            {% for r in reciters %}
+              <option value="{{ r.id }}" {% if selected_reciter == r.id|stringformat:"s" %}selected{% endif %}>
+                {% t request r "name" %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Juz Filter -->
+        <div class="filter-group">
+          <label class="filter-label" for="juz">Juz</label>
+          <select class="filter-select" id="juz" name="juz">
+            <option value="">All Juz</option>
+            {% for j in juzs %}
+              <option value="{{ j.id }}" {% if selected_juz == j.id|stringformat:"s" %}selected{% endif %}>
+                Juz {{ j.number }} - {% t request j "name" %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Apply Filters
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Results Section -->
+  <div class="section">
+    <div class="section-head">
+      <h3>Recitations</h3>
+      <div class="section-head-right">
+        <div class="results-count">
+          {% if recitations %}
+            {{ recitations|length }} recitation{{ recitations|length|pluralize }}
+            {% if selected_surah or selected_reciter or selected_juz %}
+              (filtered)
+            {% endif %}
+          {% endif %}
+        </div>
+        {% if recitations %}
+        <div class="play-all-container">
+          <button class="btn btn-primary btn-sm" type="button" data-play-all data-queue-script="queue_all">
+            <i class="fas fa-play"></i> Play All
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- JSON Queue for all recitations -->
+    {% if recitations %}
+    <script id="queue_all" type="application/json">
+    [
+    {% for rec in recitations %}
+      {
+        "audio": "{{ rec.audio_file.url }}",
+        "title": "{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    ]
+    </script>
+    {% endif %}
+
+    {% if recitations %}
+      <!-- Recitations Grid -->
+      <div class="cards">
+        {% for rec in recitations %}
+          <div class="card recitation-card">
+            <!-- Card Media -->
+            {% if rec.surah.image %}
+              <div class="card-media">
+                <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
+                <div class="play-overlay">
+                  <button class="btn btn-primary play-btn"
+                          data-play-one
+                          data-audio="{{ rec.audio_file.url }}"
+                          data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+                    <i class="fas fa-play"></i>
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="card-body">
+              <div class="card-header">
+                <h3 class="card-title">
+                  {{ rec.surah.number }} - {% t request rec.surah "name" %}
+                </h3>
+                <p class="card-subtitle">
+                  <i class="fas fa-user"></i> {% t request rec.reciter "name" %}
+                </p>
+                <div class="card-meta">
+                  <span class="badge badge-type">{{ rec.recitation_type|title }}</span>
+                  {% if rec.surah.juz.all %}
+                    <span class="badge badge-juz">
+                      {% for juz in rec.surah.juz.all %}
+                        Juz {{ juz.number }}{% if not forloop.last %}, {% endif %}
+                      {% endfor %}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <button class="btn btn-primary"
+                        data-play-one
+                        data-audio="{{ rec.audio_file.url }}"
+                        data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+                  <i class="fas fa-play"></i> Play
+                </button>
+                
+                <a href="{% url 'surah_detail' rec.surah.id %}" class="btn btn-secondary">
+                  <i class="fas fa-book"></i> Surah
+                </a>
+                
+                {% if user.is_authenticated %}
+                  <!-- Add to Favorites -->
+                  <form method="post" action="{% url 'add_to_favorites' %}" class="favorite-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+                    <button type="submit" class="btn btn-outline btn-favorite" title="Add to Favorites">
+                      <i class="far fa-heart"></i>
+                    </button>
+                  </form>
+                  
+                  <!-- Add to Playlist -->
+                  <form method="post" action="{% url 'add_to_playlist' %}" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+                    <select name="playlist_id" required class="select-sm">
+                      <option value="">Playlist</option>
+                      {% for p in user.playlist_set.all %}
+                        <option value="{{ p.id }}">{{ p.name_en }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-success btn-sm">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if recitations.has_other_pages %}
+        <div class="pagination">
+          {% if recitations.has_previous %}
+            <a href="?page={{ recitations.previous_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}" class="btn btn-outline">
+              <i class="fas fa-chevron-left"></i> Previous
+            </a>
+          {% endif %}
+          
+          <span class="page-info">
+            Page {{ recitations.number }} of {{ recitations.paginator.num_pages }}
+          </span>
+          
+          {% if recitations.has_next %}
+            <a href="?page={{ recitations.next_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}" class="btn btn-outline">
+              Next <i class="fas fa-chevron-right"></i>
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- No Results -->
+      <div class="no-results">
+        <div class="no-results-icon">
+          <i class="fas fa-search"></i>
+        </div>
+        <h3>No recitations found</h3>
+        <p>Try adjusting your filters or browse all recitations</p>
+        <a href="{% url 'recitation_list' %}" class="btn btn-primary">
+          View All Recitations
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Filter functionality
+  const filterSelects = document.querySelectorAll('.filter-select');
+  
+  filterSelects.forEach(select => {
+    select.addEventListener('change', function() {
+      // Optional: Uncomment to auto-submit on change
+      // this.form.submit();
+    });
+  });
+  
+  // Play All functionality
+  const playAllBtn = document.querySelector('[data-play-all]');
+  if (playAllBtn) {
+    playAllBtn.addEventListener('click', function() {
+      const queueScriptId = playAllBtn.getAttribute('data-queue-script');
+      const queueScript = document.getElementById(queueScriptId);
+      if (!queueScript) return;
+      
+      try {
+        const queue = JSON.parse(queueScript.textContent);
+        if (!queue.length) {
+          alert('No recitations to play.');
+          return;
+        }
+        
+        // Implement your play all logic here
+        console.log('Playing all recitations:', queue);
+        
+        // For now, play the first one
+        if (queue[0]) {
+          const firstRec = queue[0];
+          const playEvent = new CustomEvent('playAudio', {
+            detail: {
+              audio: firstRec.audio,
+              title: firstRec.title,
+              queue: queue
+            }
+          });
+          document.dispatchEvent(playEvent);
+        }
+      } catch (error) {
+        console.error('Error parsing queue:', error);
+      }
+    });
+  }
+  
+  // Individual play buttons
+  document.querySelectorAll('[data-play-one]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const audio = this.getAttribute('data-audio');
+      const title = this.getAttribute('data-title');
+      
+      const playEvent = new CustomEvent('playAudio', {
+        detail: { audio, title }
+      });
+      document.dispatchEvent(playEvent);
+    });
+  });
+  
+  // Display active filters
+  const activeFilters = [];
+  
+  // Check filters directly from DOM instead of using template variables
+  const surahSelect = document.getElementById('surah');
+  const reciterSelect = document.getElementById('reciter');
+  const juzSelect = document.getElementById('juz');
+  
+  if (surahSelect && surahSelect.value) {
+    const selectedOption = surahSelect.options[surahSelect.selectedIndex];
+    activeFilters.push('Surah: ' + selectedOption.text);
+  }
+  
+  if (reciterSelect && reciterSelect.value) {
+    const selectedOption = reciterSelect.options[reciterSelect.selectedIndex];
+    activeFilters.push('Reciter: ' + selectedOption.text);
+  }
+  
+  if (juzSelect && juzSelect.value) {
+    const selectedOption = juzSelect.options[juzSelect.selectedIndex];
+    activeFilters.push('Juz: ' + selectedOption.text);
+  }
+  
+  // Show active filters badge if there are any
+  if (activeFilters.length > 0) {
+    const resultsHeader = document.querySelector('.section-head');
+    if (resultsHeader) {
+      const filterBadge = document.createElement('span');
+      filterBadge.className = 'badge badge-juz';
+      filterBadge.textContent = activeFilters.length + ' filter' + (activeFilters.length > 1 ? 's' : '');
+      filterBadge.title = activeFilters.join('\n');
+      filterBadge.style.cursor = 'help';
+      resultsHeader.appendChild(filterBadge);
+    }
+  }
+});
+</script>
+{% endblock %}

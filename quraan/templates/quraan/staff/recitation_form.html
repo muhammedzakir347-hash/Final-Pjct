@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Recitation Form | Islamic Web{% endblock %}
+{% block content %}
+<h2>{% if mode == "create" %}Add{% else %}Edit{% endif %} Recitation</h2>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+
+<p><a href="{% url 'staff_recitations' %}">Back</a></p>
+{% endblock %}

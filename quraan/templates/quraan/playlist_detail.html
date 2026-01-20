@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}
+{% t request playlist "name" %} | Islamic Web
+{% endblock %}
+
+{% block content %}
+
+<h2>{% t request playlist "name" %}</h2>
+
+{# ---------- PLAY ALL BUTTON ---------- #}
+<div class="play-all-container" style="margin-bottom:20px;">
+  <button class="play-all-btn" type="button" data-play-all data-queue-script="queue_playlist"
+          style="padding:10px 16px; border-radius:12px; font-weight:700; background:#1f2933; color:#fff; border:none; cursor:pointer;">
+    ▶ Play All
+  </button>
+</div>
+
+{# ---------- JSON QUEUE ---------- #}
+<script id="queue_playlist" type="application/json">
+[
+{% for item in items %}
+  {
+    "audio": "{{ item.recitation.audio_file.url }}",
+    "title": "{{ item.recitation.surah.number }} - {% t request item.recitation.surah 'name' %} — {% t request item.recitation.reciter 'name' %} ({{ item.recitation.recitation_type }})"
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
+<div class="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px;">
+  {% for item in items %}
+    <div class="card" style="background:#fff;border:1px solid #e6e6e6;border-radius:12px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;">
+      
+      {% if item.recitation.surah.image %}
+        <div class="card-media" style="position:relative;">
+          <img src="{{ item.recitation.surah.image.url }}" alt="{% t request item.recitation.surah 'name' %}" style="width:100%;border-radius:8px;">
+          <div class="play-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+            <a class="play-btn" href="#" data-play-one
+               data-audio="{{ item.recitation.audio_file.url }}"
+               data-title="{{ item.recitation.surah.number }} - {% t request item.recitation.surah 'name' %} — {% t request item.recitation.reciter 'name' %}"
+               style="padding:6px 12px; border-radius:8px; background:#1f2933; color:#fff; text-decoration:none;">
+              ▶ Play
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title" style="font-weight:700;margin:8px 0 4px 0;">
+        {{ item.recitation.surah.number }} - {% t request item.recitation.surah "name" %}
+      </p>
+
+      <p class="card-sub" style="margin:0 0 8px 0;opacity:0.8;font-size:14px;">
+        {% t request item.recitation.reciter "name" %} ({{ item.recitation.recitation_type }})
+      </p>
+
+      <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+
+        <!-- Play button -->
+        <a class="play-btn-inline" href="#" data-play-one
+           data-audio="{{ item.recitation.audio_file.url }}"
+           data-title="{{ item.recitation.surah.number }} - {% t request item.recitation.surah 'name' %} — {% t request item.recitation.reciter 'name' %}"
+           style="padding:6px 12px; border-radius:8px; background:#1f2933; color:#fff; text-decoration:none;">
+          ▶ Play
+        </a>
+
+        <!-- Remove from playlist -->
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="item_id" value="{{ item.id }}">
+          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#ef4444; color:#fff; cursor:pointer;">
+            ❌ Remove
+          </button>
+        </form>
+
+        <!-- Add to Favorites -->
+        <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ item.recitation.id }}">
+          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#f59e0b; color:#fff; cursor:pointer;">
+            ❤️ Favorite
+          </button>
+        </form>
+
+        <!-- Add to Playlist -->
+        <form method="post" action="{% url 'add_to_playlist' %}" style="display:inline; flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ item.recitation.id }}">
+          <select name="playlist_id" required style="padding:6px 8px; border-radius:8px; border:1px solid #ccc;">
+            <option value="">Select Playlist</option>
+            {% for p in playlists %}
+              <option value="{{ p.id }}">{{ p.name_en }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#10b981; color:#fff; cursor:pointer;">
+            ➕ Add
+          </button>
+        </form>
+
+      </div>
+    </div>
+  {% empty %}
+    <p>This playlist is empty.</p>
+  {% endfor %}
+</div>
+
+<p>
+  <a href="{% url 'playlists' %}" style="text-decoration:none; color:#3b82f6;">← Back to Playlists</a>
+</p>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ---------- Play All ----------
+  const playAllBtn = document.querySelector('[data-play-all]');
+  if (playAllBtn) {
+    playAllBtn.addEventListener('click', function() {
+      const queueScriptId = playAllBtn.getAttribute('data-queue-script');
+      const queueScript = document.getElementById(queueScriptId);
+      if (!queueScript) return;
+
+      const queue = JSON.parse(queueScript.textContent);
+      if (!queue.length) return;
+
+      let index = 0;
+      const miniAudio = document.querySelector('.mini-player audio') || new Audio();
+      const miniTitle = document.querySelector('.mini-title');
+
+      function playNext() {
+        if (index >= queue.length) return;
+        const current = queue[index++];
+        miniAudio.src = current.audio;
+        miniAudio.play();
+        if (miniTitle) miniTitle.textContent = current.title;
+        miniAudio.onended = playNext;
+      }
+
+      playNext();
+    });
+  }
+
+  // ---------- Individual Play Buttons ----------
+  document.querySelectorAll('[data-play-one]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const audioSrc = btn.dataset.audio;
+      const title = btn.dataset.title;
+      const miniAudio = document.querySelector('.mini-player audio') || new Audio();
+      miniAudio.src = audioSrc;
+      miniAudio.play();
+      const miniTitle = document.querySelector('.mini-title');
+      if (miniTitle) miniTitle.textContent = title;
+    });
+  });
+});
+</script>
+{% endblock %}

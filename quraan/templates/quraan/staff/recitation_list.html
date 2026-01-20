@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Manage Recitations | Islamic Web{% endblock %}
+{% block content %}
+<h2>Manage Recitations</h2>
+<p><a href="{% url 'staff_recitation_create' %}">+ Add Recitation</a></p>
+{% if user.is_staff %}
+  <div class="nav-dd-sep"></div>
+  <a class="nav-dd-link" href="{% url 'bulk_surahs' %}">Bulk Surahs</a>
+  <a class="nav-dd-link" href="{% url 'bulk_juz' %}">Bulk Juz</a>
+  <a class="nav-dd-link" href="{% url 'bulk_reciters' %}">Bulk Reciters</a>
+  <a class="nav-dd-link" href="{% url 'bulk_recitations' %}">Bulk Recitations</a>
+{% endif %}
+
+
+<div class="cards">
+  {% for r in recitations %}
+    <div class="card">
+      <p class="card-title">{{ r.surah.number }} - {{ r.surah.name_en }}</p>
+      <p class="card-sub">{{ r.reciter.name_en }} ({{ r.recitation_type }})</p>
+      <div class="card-actions">
+        <a href="{% url 'staff_recitation_update' r.id %}">Edit</a>
+        <a href="{% url 'staff_recitation_delete' r.id %}">Delete</a>
+      </div>
+    </div>
+  {% empty %}
+    <p>No recitations yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

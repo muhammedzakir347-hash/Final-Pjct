@@ -1,0 +1,519 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" 
+    dir="{% if request.session.rtl %}rtl{% else %}ltr{% endif %}"
+    data-theme="{% if request.session.dark %}dark{% else %}light{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Islamic Web{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+<header>
+    <div class="header-container">
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" type="button" id="mobileMenuToggle">☰</button>
+        
+        <!-- Site Title -->
+        <div class="site-title">
+            <div class="site-logo">🕌</div>
+            <h1>Islamic Web</h1>
+        </div>
+
+        <!-- Main Navigation -->
+        <nav class="navbar">
+            <!-- Left: Brand links -->
+            <div class="nav-left">
+                <a class="nav-link" href="{% url 'home' %}">Home</a>
+                <a class="nav-link" href="{% url 'juz_list' %}">Juz</a>
+                <a class="nav-link" href="{% url 'reciter_list' %}">Reciters</a>
+                <a class="nav-link" href="{% url 'recitation_list' %}">Recitations</a>
+                <a class="nav-link" href="{% url 'favorites' %}">Favorites</a>
+                <a class="nav-link" href="{% url 'playlists' %}">Playlists</a>
+            </div>
+
+            <!-- Center: Search -->
+            <form method="get" action="{% url 'search' %}" class="nav-search">
+                <input type="text" name="q" placeholder="Search..." />
+                <button type="submit">🔍</button>
+            </form>
+
+            <!-- Right: Toggles + Account -->
+            <div class="nav-right">
+                <a class="nav-pill" href="{% url 'toggle_rtl' %}">
+                    {% if request.session.rtl %}EN{% else %}AR{% endif %}
+                </a>
+
+                <a class="nav-pill" href="{% url 'toggle_dark' %}">
+                    {% if request.session.dark %}☀️{% else %}🌙{% endif %}
+                </a>
+
+                <!-- Account dropdown -->
+                <div class="nav-account">
+                    <button type="button" class="nav-account-btn">
+                        {% if user.is_authenticated %}
+                            {{ user.username|truncatechars:12 }}
+                        {% else %}
+                            Account
+                        {% endif %}
+                        <span class="caret">▾</span>
+                    </button>
+
+                    <div class="nav-dropdown">
+                        {% if user.is_authenticated %}
+                            <a class="nav-dd-link" href="{% url 'favorites' %}">❤️ Favorites</a>
+                            <a class="nav-dd-link" href="{% url 'history' %}">📜 History</a>
+                            <a class="nav-dd-link" href="{% url 'playlists' %}">🎵 Playlists</a>
+                            <div class="nav-dd-sep"></div>
+                            {% if user.is_staff %}
+                                <a class="nav-dd-link" href="{% url 'staff_recitations' %}">⚙️ Manage Recitations</a>
+                                <div class="nav-dd-sep"></div>
+                            {% endif %}
+                            
+                            <!-- Logout form -->
+                            <form method="post" action="{% url 'logout' %}" class="nav-dd-form">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-dd-link nav-dd-btn">🚪 Logout</button>
+                            </form>
+                        {% else %}
+                            <a class="nav-dd-link" href="{% url 'login' %}">🔑 Login</a>
+                            <a class="nav-dd-link" href="{% url 'register' %}">📝 Register</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<!-- Mobile Menu Overlay -->
+<div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-header">
+        <h3 class="mobile-menu-title">Menu</h3>
+        <button class="mobile-menu-close" type="button" id="mobileMenuClose">✕</button>
+    </div>
+    
+    <div class="mobile-menu-content">
+        <a class="mobile-nav-link" href="{% url 'home' %}">🏠 Home</a>
+        <a class="mobile-nav-link" href="{% url 'juz_list' %}">📖 Juz</a>
+        <a class="mobile-nav-link" href="{% url 'reciter_list' %}">🎤 Reciters</a>
+        <a class="mobile-nav-link" href="{% url 'recitation_list' %}">🎵 Recitations</a>
+        <a class="mobile-nav-link" href="{% url 'favorites' %}">❤️ Favorites</a>
+        <a class="mobile-nav-link" href="{% url 'history' %}">📜 History</a>
+        <a class="mobile-nav-link" href="{% url 'playlists' %}">🎵 Playlists</a>
+        
+        <div class="mobile-nav-actions">
+            <a class="nav-pill" href="{% url 'toggle_rtl' %}">
+                {% if request.session.rtl %}EN{% else %}AR{% endif %}
+            </a>
+            <a class="nav-pill" href="{% url 'toggle_dark' %}">
+                {% if request.session.dark %}☀️ Light{% else %}🌙 Dark{% endif %}
+            </a>
+        </div>
+        
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}" class="nav-dd-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="width: 100%; margin-top: 20px;">
+                    🚪 Logout
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                🔑 Login
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
+                📝 Register
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<hr class="soft-hr">
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<hr class="soft-hr">
+
+<!-- Sticky Mini Player -->
+<div id="miniPlayer" class="mini-player" style="display:none;">
+    <div class="mini-left">
+        <div id="miniTitle" class="mini-title">—</div>
+    </div>
+
+    <div class="mini-controls">
+        <button type="button" id="btnShuffle" data-tip="Shuffle" class="btn btn-neutral btn-sm">🔀</button>
+        <button type="button" id="btnPrev" data-tip="Previous" class="btn btn-neutral btn-sm">⏮</button>
+        <button type="button" id="btnPlayPause" data-tip="Play / Pause" class="btn btn-primary btn-sm">▶</button>
+        <button type="button" id="btnNext" data-tip="Next" class="btn btn-neutral btn-sm">⏭</button>
+        <button type="button" id="btnRepeat" data-tip="Repeat" class="btn btn-neutral btn-sm">🔁</button>
+
+        <select id="speedSelect" data-tip="Playback Speed" class="select-sm">
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+        </select>
+    </div>
+
+    <!-- Minimize / Maximize and Close -->
+    <button id="btnMinimize" class="mini-minimize btn btn-neutral btn-sm" title="Minimize">—</button>
+    <button id="btnMaximize" class="mini-maximize btn btn-neutral btn-sm" title="Restore" style="display:none;">⤢</button>
+    <button id="btnCloseMini" class="mini-close btn btn-danger btn-sm" title="Close">✖</button>
+
+    <audio id="miniAudio"></audio>
+</div>
+
+<footer>
+    <p>&copy; {% now "Y" %} Islamic Web</p>
+</footer>
+
+<!-- JavaScript -->
+<!-- JavaScript -->
+<script>
+// Mobile Menu Toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileMenuClose = document.getElementById('mobileMenuClose');
+    
+    if (mobileMenuToggle && mobileMenu) {
+        mobileMenuToggle.addEventListener('click', function() {
+            mobileMenu.classList.add('active');
+        });
+        
+        mobileMenuClose.addEventListener('click', function() {
+            mobileMenu.classList.remove('active');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!mobileMenu.contains(event.target) && !mobileMenuToggle.contains(event.target)) {
+                mobileMenu.classList.remove('active');
+            }
+        });
+    }
+});
+
+// ============================================
+// MINI PLAYER FIXED CODE
+// ============================================
+
+// Get mini player elements
+const miniPlayer = document.getElementById("miniPlayer");
+const miniAudio = document.getElementById("miniAudio");
+const miniTitle = document.getElementById("miniTitle");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const btnPlay = document.getElementById("btnPlayPause");
+const btnShuffle = document.getElementById("btnShuffle");
+const btnRepeat = document.getElementById("btnRepeat");
+const speedSelect = document.getElementById("speedSelect");
+const btnClose = document.getElementById("btnCloseMini");
+const btnMinimize = document.getElementById("btnMinimize");
+const btnMaximize = document.getElementById("btnMaximize");
+
+// ---- Audio Player State ----
+function loadState() {
+    const q = JSON.parse(localStorage.getItem("audioQueue") || "[]");
+    const i = parseInt(localStorage.getItem("audioQueueIndex") || "0", 10);
+    const shuffle = localStorage.getItem("audioShuffle") === "1";
+    const repeat = localStorage.getItem("audioRepeat") === "1";
+    const speed = parseFloat(localStorage.getItem("audioSpeed") || "1");
+    return { 
+        queue: Array.isArray(q) ? q : [], 
+        index: isNaN(i) ? 0 : i, 
+        shuffle, 
+        repeat, 
+        speed: isNaN(speed) ? 1 : speed 
+    };
+}
+
+function saveState(queue, index) {
+    localStorage.setItem("audioQueue", JSON.stringify(queue));
+    localStorage.setItem("audioQueueIndex", String(index));
+}
+
+function setShuffle(val) {
+    localStorage.setItem("audioShuffle", val ? "1" : "0");
+    if (btnShuffle) btnShuffle.style.opacity = val ? "1" : "0.5";
+}
+
+function setRepeat(val) {
+    localStorage.setItem("audioRepeat", val ? "1" : "0");
+    if (btnRepeat) btnRepeat.style.opacity = val ? "1" : "0.5";
+}
+
+function setSpeed(val) {
+    localStorage.setItem("audioSpeed", String(val));
+    miniAudio.playbackRate = val;
+    if (speedSelect) speedSelect.value = String(val);
+}
+
+function setUIPlaying(isPlaying) {
+    if (btnPlay) btnPlay.textContent = isPlaying ? "⏸" : "▶";
+    if (isPlaying) {
+        miniPlayer.style.display = "flex";
+    }
+}
+
+function playAt(index) {
+    const state = loadState();
+    const queue = state.queue;
+    if (!queue.length) return;
+    if (index < 0) index = 0;
+    if (index >= queue.length) index = queue.length - 1;
+
+    const item = queue[index];
+    saveState(queue, index);
+    miniTitle.textContent = item.title || "—";
+    miniAudio.src = item.audio || "";
+    setSpeed(state.speed);
+    
+    // Play the audio
+    miniAudio.play().then(() => {
+        setUIPlaying(true);
+    }).catch(error => {
+        console.error("Error playing audio:", error);
+        // If autoplay is blocked, show play button
+        setUIPlaying(false);
+    });
+    
+    // Ensure player is visible and maximized when playing
+    if (miniPlayer.classList.contains("minimized")) {
+        toggleMinimize();
+    }
+}
+
+function setQueueAndPlay(queue, startIndex = 0) {
+    saveState(queue, startIndex);
+    playAt(startIndex);
+}
+
+function nextIndex() {
+    const state = loadState();
+    const queue = state.queue;
+    if (!queue.length) return 0;
+    if (state.shuffle) {
+        if (queue.length === 1) return 0;
+        let n = Math.floor(Math.random() * queue.length);
+        while (n === state.index) n = Math.floor(Math.random() * queue.length);
+        return n;
+    }
+    return state.index + 1;
+}
+
+function prevIndex() {
+    const state = loadState();
+    if (state.shuffle) return nextIndex();
+    return state.index - 1;
+}
+
+// Audio events
+miniAudio.addEventListener("ended", () => {
+    const state = loadState();
+    if (state.repeat) { 
+        playAt(state.index); 
+        return; 
+    }
+    playAt(nextIndex());
+});
+
+miniAudio.addEventListener("pause", () => {
+    setUIPlaying(false);
+});
+
+miniAudio.addEventListener("play", () => {
+    setUIPlaying(true);
+});
+
+// Button events
+if (btnPrev) btnPrev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    playAt(prevIndex());
+});
+
+if (btnNext) btnNext.addEventListener("click", (e) => {
+    e.stopPropagation();
+    playAt(nextIndex());
+});
+
+if (btnPlay) btnPlay.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!miniAudio.src) return;
+    if (miniAudio.paused) {
+        miniAudio.play().catch(error => {
+            console.error("Error playing audio:", error);
+        });
+    } else {
+        miniAudio.pause();
+    }
+});
+
+if (btnShuffle) btnShuffle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setShuffle(!loadState().shuffle);
+});
+
+if (btnRepeat) btnRepeat.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setRepeat(!loadState().repeat);
+});
+
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        e.stopPropagation();
+        setSpeed(parseFloat(speedSelect.value) || 1);
+    });
+}
+
+// Toggle minimize/restore
+function toggleMinimize() {
+    const isMinimized = miniPlayer.classList.contains("minimized");
+    
+    if (isMinimized) {
+        // Restore to full player
+        miniPlayer.classList.remove("minimized");
+        if (btnMinimize) btnMinimize.style.display = "inline-block";
+        if (btnMaximize) btnMaximize.style.display = "none";
+    } else {
+        // Minimize
+        miniPlayer.classList.add("minimized");
+        if (btnMinimize) btnMinimize.style.display = "none";
+        if (btnMaximize) btnMaximize.style.display = "inline-block";
+    }
+}
+
+if (btnMinimize) btnMinimize.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleMinimize();
+});
+
+if (btnMaximize) btnMaximize.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleMinimize();
+});
+
+// Click on minimized player to restore
+miniPlayer.addEventListener("click", (e) => {
+    if (miniPlayer.classList.contains("minimized")) {
+        if (!e.target.closest('.mini-close') && !e.target.closest('.mini-maximize')) {
+            toggleMinimize();
+        }
+    }
+});
+
+if (btnClose) btnClose.addEventListener("click", (e) => {
+    e.stopPropagation();
+    miniAudio.pause();
+    miniAudio.currentTime = 0;
+    miniPlayer.style.display = "none";
+    miniPlayer.classList.remove("minimized");
+    if (btnMinimize) btnMinimize.style.display = "inline-block";
+    if (btnMaximize) btnMaximize.style.display = "none";
+});
+
+// Restore state on load
+window.addEventListener("load", () => {
+    const state = loadState();
+    setShuffle(state.shuffle);
+    setRepeat(state.repeat);
+    setSpeed(state.speed);
+
+    if (state.queue.length) {
+        const item = state.queue[state.index] || state.queue[0];
+        miniTitle.textContent = item.title || "—";
+        miniAudio.src = item.audio || "";
+        
+        if (!miniAudio.paused || miniAudio.src) {
+            miniPlayer.style.display = "flex";
+            setUIPlaying(!miniAudio.paused);
+        }
+    }
+});
+
+// ============================================
+// GLOBAL PLAY HANDLERS
+// ============================================
+
+// Global Audio Player Functions
+window.audioPlayer = {
+    playOne: function(audioUrl, title) {
+        setQueueAndPlay([{ audio: audioUrl, title: title }], 0);
+    },
+    
+    playQueue: function(queue, startIndex = 0) {
+        setQueueAndPlay(queue, startIndex);
+    },
+    
+    addToQueue: function(audioUrl, title) {
+        const state = loadState();
+        state.queue.push({ audio: audioUrl, title: title || 'Audio' });
+        saveState(state.queue, state.index);
+        
+        // If nothing is playing, play this
+        if (!miniAudio.src || miniAudio.paused) {
+            playAt(state.queue.length - 1);
+        }
+    },
+    
+    clearQueue: function() {
+        saveState([], 0);
+        miniAudio.pause();
+        miniAudio.currentTime = 0;
+        miniTitle.textContent = '—';
+        miniPlayer.style.display = 'none';
+    }
+};
+
+// Handle play buttons globally
+document.addEventListener("click", (e) => {
+    // Play single audio
+    const playOne = e.target.closest("[data-play-one]");
+    if (playOne) {
+        e.preventDefault();
+        const audio = playOne.getAttribute("data-audio");
+        const title = playOne.getAttribute("data-title");
+        window.audioPlayer.playOne(audio, title);
+        return;
+    }
+    
+    // Play all from queue
+    const playAllBtn = e.target.closest("[data-play-all]");
+    if (playAllBtn) {
+        e.preventDefault();
+        const scriptId = playAllBtn.getAttribute("data-queue-script");
+        const scriptEl = document.getElementById(scriptId);
+        if (!scriptEl) return;
+        const queue = JSON.parse(scriptEl.textContent || "[]");
+        window.audioPlayer.playQueue(queue, 0);
+        return;
+    }
+    
+    // Add to queue
+    const addToQueueBtn = e.target.closest("[data-add-to-queue]");
+    if (addToQueueBtn) {
+        e.preventDefault();
+        const audio = addToQueueBtn.getAttribute("data-audio");
+        const title = addToQueueBtn.getAttribute("data-title");
+        window.audioPlayer.addToQueue(audio, title);
+        return;
+    }
+});
+
+// Expose to window for debugging
+window.AudioPlayer = window.audioPlayer;
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

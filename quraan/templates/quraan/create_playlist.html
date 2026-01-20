@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Create Playlist | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Create Playlist</h2>
+
+<form method="post">
+  {% csrf_token %}
+
+  <label>Playlist Name (EN)</label><br>
+  <input type="text" name="name_en" required><br><br>
+
+  <label>اسم القائمة</label><br>
+  <input type="text" name="name_ar" required><br><br>
+
+  <button type="submit">Create</button>
+</form>
+{% endblock %}

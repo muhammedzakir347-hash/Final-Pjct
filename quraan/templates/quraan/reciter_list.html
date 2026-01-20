@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Reciters | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Reciters</h2>
+
+<div class="cards">
+  {% for r in reciters %}
+    <div class="card">
+
+      {% if r.image %}
+        <div class="card-media">
+          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {% t request r "name" %}
+      </p>
+
+      <div class="card-actions">
+        <a href="{% url 'reciter_detail' r.id %}">
+          View Recitations
+        </a>
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No reciters found.</p>
+  {% endfor %}
+</div>
+
+<p><a href="{% url 'home' %}">Back</a></p>
+{% endblock %}

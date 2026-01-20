@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Search | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Search</h2>
+
+<form method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search surah / reciter..." />
+  <button type="submit">Search</button>
+</form>
+
+{% if q %}
+
+<!-- ================= SURAHS ================= -->
+<h3>Surahs</h3>
+<div class="cards">
+  {% for s in surahs %}
+    <div class="card">
+
+      {% if s.image %}
+        <div class="card-media">
+          <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ s.number }} - {% t request s "name" %}
+      </p>
+
+      <div class="card-actions">
+        <a href="{% url 'surah_detail' s.id %}">Open</a>
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No surahs found.</p>
+  {% endfor %}
+</div>
+
+<!-- ================= RECITERS ================= -->
+<h3>Reciters</h3>
+<div class="cards">
+  {% for r in reciters %}
+    <div class="card">
+
+      {% if r.image %}
+        <div class="card-media">
+          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {% t request r "name" %}
+      </p>
+
+      <div class="card-actions">
+        <a href="{% url 'reciter_detail' r.id %}">Open</a>
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No reciters found.</p>
+  {% endfor %}
+</div>
+
+<!-- ================= RECITATIONS ================= -->
+<h3>Recitations</h3>
+
+<!-- ▶ PLAY ALL -->
+<button data-play-all data-queue-script="queue_search"
+        style="margin-bottom:12px;padding:8px 14px;border-radius:10px;">
+  ▶ Play All
+</button>
+
+<script id="queue_search" type="application/json">
+[
+{% for r in recitations %}
+  {
+    "audio": "{{ r.audio_file.url }}",
+    "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
+<div class="cards">
+  {% for rec in recitations %}
+    <div class="card">
+
+      {% if rec.surah.image %}
+        <div class="card-media">
+          <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ rec.surah.number }} - {% t request rec.surah "name" %}
+      </p>
+
+      <p class="card-sub">
+        {% t request rec.reciter "name" %} ({{ rec.recitation_type }})
+      </p>
+
+      <!-- ✅ STANDARD CARD ACTIONS -->
+      <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+
+        <a href="#"
+           data-play-one
+           data-audio="{{ rec.audio_file.url }}"
+           data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+          ▶ Play
+        </a>
+
+        <a href="{% url 'surah_detail' rec.surah.id %}">Surah</a>
+        <a href="{% url 'reciter_detail' rec.reciter.id %}">Reciter</a>
+
+        {% if request.user.is_authenticated %}
+        <form method="post" action="{% url 'add_to_favorites' %}">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+          <button type="submit">❤️</button>
+        </form>
+
+        <form method="post" action="{% url 'add_to_playlist' %}">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+          <select name="playlist_id" required>
+            <option value="">Playlist</option>
+            {% for p in request.user.playlist_set.all %}
+              <option value="{{ p.id }}">{{ p.name_en }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">➕</button>
+        </form>
+        {% endif %}
+
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No recitations found.</p>
+  {% endfor %}
+</div>
+
+{% endif %}
+{% endblock %}

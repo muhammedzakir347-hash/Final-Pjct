@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}
+{% t request reciter "name" %} | Islamic Web
+{% endblock %}
+
+{% block content %}
+<div class="reciter-header">
+  {% if reciter.image %}
+    <div class="reciter-image">
+      <img src="{{ reciter.image.url }}" alt="{% t request reciter 'name' %}">
+    </div>
+  {% endif %}
+
+  <div class="reciter-info">
+    <h2>{% t request reciter "name" %}</h2>
+    <p>
+      Total Recitations: {{ recitations|length }}<br>
+      Country: {% if reciter.country_en %}{% t request reciter "country" %}{% else %}Unknown{% endif %}
+    </p>
+    <div class="play-all-container">
+      <button class="play-all-btn" type="button" data-play-all data-queue-script="queue_reciter">
+        ▶ Play All
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Queue data for the global player -->
+<script id="queue_reciter" type="application/json">
+[
+{% for r in recitations %}
+  {
+    "audio": "{{ r.audio_file.url }}",
+    "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
+<div class="cards">
+  {% for r in recitations %}
+    <div class="card recitation-card"> <!-- Added recitation-card class -->
+      {% if r.surah.image %}
+        <div class="card-media">
+          <img src="{{ r.surah.image.url }}" alt="{% t request r.surah 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn"
+               href="#"
+               data-play-one
+               data-audio="{{ r.audio_file.url }}"
+               data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})">
+              ▶ Play
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">{{ r.surah.number }} - {% t request r.surah "name" %}</p>
+      <p class="card-sub">{% t request r.reciter "name" %} ({{ r.recitation_type }})</p>
+
+      <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+
+        <!-- Play track - uses global player -->
+        <a href="#"
+           data-play-one
+           data-audio="{{ r.audio_file.url }}"
+           data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+           style="padding:6px 12px; border-radius:8px; border:none; background:#4CAF50; color:#fff; cursor:pointer; text-decoration:none; display:inline-block;">
+          ▶ Play
+        </a>
+
+        <!-- Add to Queue - new button for global player -->
+        <a href="#"
+           data-add-to-queue
+           data-audio="{{ r.audio_file.url }}"
+           data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+           style="padding:6px 12px; border-radius:8px; border:none; background:#2196F3; color:#fff; cursor:pointer; text-decoration:none; display:inline-block;">
+          ➕ Add to Queue
+        </a>
+
+        <!-- Surah detail -->
+        <a href="{% url 'surah_detail' r.surah.id %}" 
+           style="padding:6px 12px; border-radius:8px; border:1px solid #ccc; color:#333; cursor:pointer; text-decoration:none; display:inline-block;">
+          Surah
+        </a>
+
+        <!-- Add to Favorites -->
+        <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ r.id }}">
+          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#f59e0b; color:#fff; cursor:pointer;">
+            ❤️ Favorite
+          </button>
+        </form>
+
+        <!-- Add to Playlist -->
+        {% if request.user.is_authenticated %}
+        <form method="post" action="{% url 'add_to_playlist' %}" style="display:inline; flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ r.id }}">
+          <select name="playlist_id" required style="padding:6px 8px; border-radius:8px; border:1px solid #ccc;">
+            <option value="">Select Playlist</option>
+            {% for p in request.user.playlist_set.all %}
+              <option value="{{ p.id }}">{{ p.name_en }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#10b981; color:#fff; cursor:pointer;">
+            ➕ Add
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+  {% empty %}
+    <p>No recitations for this reciter yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// This page doesn't need custom player JS since it uses the global player
+// But you can add custom functionality here if needed
+
+// Example: Add "Add All to Queue" button functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Add an "Add All to Queue" button if you want
+  const playAllContainer = document.querySelector('.play-all-container');
+  if (playAllContainer) {
+    const addAllBtn = document.createElement('button');
+    addAllBtn.className = 'play-all-btn';
+    addAllBtn.type = 'button';
+    addAllBtn.style.marginLeft = '10px';
+    addAllBtn.style.background = '#2196F3';
+    addAllBtn.textContent = '➕ Add All to Queue';
+    addAllBtn.onclick = addAllToQueue;
+    playAllContainer.appendChild(addAllBtn);
+  }
+});
+
+function addAllToQueue() {
+  const scriptEl = document.getElementById('queue_reciter');
+  if (!scriptEl) return;
+  
+  try {
+    const queue = JSON.parse(scriptEl.textContent || "[]");
+    if (!Array.isArray(queue) || !queue.length) return;
+    
+    // Add each item to the global player queue
+    queue.forEach(item => {
+      if (window.audioPlayer && typeof window.audioPlayer.addToQueue === 'function') {
+        window.audioPlayer.addToQueue(item.audio, item.title);
+      }
+    });
+    
+    alert(`Added ${queue.length} recitations to queue`);
+  } catch (e) {
+    console.error('Error adding to queue:', e);
+  }
+}
+</script>
+{% endblock %}

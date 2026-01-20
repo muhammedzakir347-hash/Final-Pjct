@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Bulk Recitations | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Bulk Import Recitations (Staff)</h2>
+
+<p><b>CSV format:</b></p>
+<pre>
+surah_number,reciter_name_en,recitation_type,audio_file_path
+1,Abdul Basit,murattal,recitations/001_fatiha_abdulbasit.mp3
+2,Al-Husary,mujawwad,recitations/002_baqarah_husary.mp3
+</pre>
+
+<p>
+<b>Notes:</b><br>
+• recitation_type: <code>murattal</code> or <code>mujawwad</code><br>
+• audio_file_path must exist inside MEDIA folder
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Import Recitations</button>
+</form>
+
+{% if created %}
+  <p><b>Created:</b> {{ created }}</p>
+{% endif %}
+
+{% if errors %}
+  <h3>Errors</h3>
+  <ul>
+    {% for e in errors %}
+      <li>{{ e }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

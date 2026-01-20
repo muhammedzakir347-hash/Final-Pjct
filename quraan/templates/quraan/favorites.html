@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}My Favorites | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>My Favorites</h2>
+
+<div class="cards">
+  {% for f in favorites %}
+    <div class="card">
+      {% if f.recitation.surah.image %}
+        <div class="card-media">
+          <img src="{{ f.recitation.surah.image.url }}" alt="{% t request f.recitation.surah 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn"
+               href="#"
+               data-play-one
+               data-audio="{{ f.recitation.audio_file.url }}"
+               data-title="{{ f.recitation.surah.number }} - {% t request f.recitation.surah 'name' %} — {% t request f.recitation.reciter 'name' %} ({{ f.recitation.recitation_type }})">
+              ▶ Play
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ f.recitation.surah.number }} - {% t request f.recitation.surah "name" %}
+      </p>
+
+      <p class="card-sub">
+        {% t request f.recitation.reciter "name" %} ({{ f.recitation.recitation_type }})
+      </p>
+
+      <div class="card-actions">
+        <a href="#"
+           data-play-one
+           data-audio="{{ f.recitation.audio_file.url }}"
+           data-title="{{ f.recitation.surah.number }} - {% t request f.recitation.surah 'name' %} — {% t request f.recitation.reciter 'name' %} ({{ f.recitation.recitation_type }})">
+          ▶ Play
+        </a>
+
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="fav_id" value="{{ f.id }}">
+          <button type="submit">Remove</button>
+        </form>
+      </div>
+    </div>
+  {% empty %}
+    <p>No favorites yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Surahs | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Surahs</h2>
+
+<div class="cards">
+  {% for s in surahs %}
+    <div class="card">
+
+      {# ---------- Play All queue for this Surah ---------- #}
+      <script id="queue_surah_{{ s.id }}" type="application/json">
+      [
+        {% for rec in s.recitation_set.all %}
+          {
+            "audio": "{{ rec.audio_file.url|escapejs }}",
+            "title": "{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"|escapejs
+          }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ]
+      </script>
+
+      <div class="card-row">
+        <div class="card-avatar">
+          {% if s.image %}
+            <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+          {% else %}
+            <span class="avatar-text">{{ s.name_en|slice:":1" }}</span>
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          <p class="card-title">{{ s.number }} - {% t request s "name" %}</p>
+
+          <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+
+  <!-- ▶ Play All -->
+  <a href="#"
+     data-play-all
+     data-queue-script="queue_surah_{{ s.id }}"
+     style="padding:6px 12px;border-radius:8px;background:#1f2933;color:#fff;text-decoration:none;">
+    ▶ Play
+  </a>
+
+  <!-- 📖 Details -->
+  <a href="{% url 'surah_detail' s.id %}"
+     style="padding:6px 12px;border-radius:8px;background:#3b82f6;color:#fff;text-decoration:none;">
+    Details
+  </a>
+
+  {% if request.user.is_authenticated %}
+
+  <!-- ❤️ Add to Favorites -->
+  <form method="post" action="{% url 'add_surah_to_favorites' %}" style="display:inline;">
+    {% csrf_token %}
+    <input type="hidden" name="surah_id" value="{{ s.id }}">
+    <button type="submit"
+            style="padding:6px 12px;border-radius:8px;border:none;background:#f43f5e;color:#fff;cursor:pointer;">
+      ❤️ Favorite
+    </button>
+  </form>
+
+  <!-- ➕ Add to Playlist -->
+  <form method="post" action="{% url 'add_surah_to_playlist' %}"
+        style="display:inline-flex;gap:6px;align-items:center;">
+    {% csrf_token %}
+    <input type="hidden" name="surah_id" value="{{ s.id }}">
+
+    <select name="playlist_id" required
+            style="padding:6px 8px;border-radius:8px;border:1px solid #ccc;">
+      <option value="">Playlist</option>
+      {% for p in request.user.playlist_set.all %}
+        <option value="{{ p.id }}">{{ p.name_en }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit"
+            style="padding:6px 10px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">
+      ➕ Add
+    </button>
+  </form>
+
+  {% endif %}
+</div>
+
+        </div>
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No surahs found.</p>
+  {% endfor %}
+</div>
+
+<p><a href="{% url 'home' %}">Back</a></p>
+{% endblock %}

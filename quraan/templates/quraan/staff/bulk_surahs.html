@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Bulk Surahs | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Bulk Import Surahs (Staff)</h2>
+
+<p><b>CSV format:</b></p>
+<pre>
+number,name_en,name_ar,total_ayahs,revelation_type,juz_numbers
+1,Al-Fatiha,الفاتحة,7,M,1
+2,Al-Baqarah,البقرة,286,D,1|2|3
+</pre>
+
+<p>
+<b>Notes:</b><br>
+• revelation_type: <code>M</code> or <code>D</code><br>
+• juz_numbers separated by <code>|</code>
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Import Surahs</button>
+</form>
+
+{% if created %}
+  <p><b>Created:</b> {{ created }}</p>
+{% endif %}
+
+{% if errors %}
+  <h3>Errors</h3>
+  <ul>
+    {% for e in errors %}
+      <li>{{ e }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

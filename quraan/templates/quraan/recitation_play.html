@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}
+Play | {% t request recitation.surah "name" %} | Islamic Web
+{% endblock %}
+
+{% block content %}
+<h2>Recitation</h2>
+
+<p>
+  <b>Surah:</b> {{ recitation.surah.number }} - {% t request recitation.surah "name" %}<br>
+  <b>Reciter:</b> {% t request recitation.reciter "name" %}<br>
+  <b>Type:</b> {{ recitation.recitation_type }}
+</p>
+
+<!-- Favorite button -->
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" name="action" value="favorite" {% if is_favorite %}disabled{% endif %}>
+    {% if is_favorite %}Added to Favorites{% else %}Add to Favorites{% endif %}
+  </button>
+</form>
+
+<hr>
+
+<!-- Add to playlist -->
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="add_to_playlist">
+
+  <label>Add to playlist:</label>
+  <select name="playlist_id" required>
+    <option value="">Select</option>
+    {% for p in playlists %}
+      <option value="{{ p.id }}">{% t request p "name" %}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Add</button>
+</form>
+
+<hr>
+
+<!-- Mini-player only (no page audio) -->
+<button type="button"
+        data-play-one
+        data-audio="{{ recitation.audio_file.url }}"
+        data-title="{{ recitation.surah.number }} - {% t request recitation.surah 'name' %} — {% t request recitation.reciter 'name' %} ({{ recitation.recitation_type }})">
+  ▶ Play in Mini Player
+</button>
+
+<p style="margin-top:16px;">
+  <a href="{% url 'surah_detail' recitation.surah.id %}">Back to Surah</a>
+</p>
+{% endblock %}

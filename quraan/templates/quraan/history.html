@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}My History | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>My Play History</h2>
+
+<div class="cards">
+  {% for h in history %}
+    <div class="card">
+
+      {% if h.recitation.surah.image %}
+        <div class="card-media">
+          <img src="{{ h.recitation.surah.image.url }}"
+               alt="{% t request h.recitation.surah 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn"
+               href="#"
+               data-play-one
+               data-audio="{{ h.recitation.audio_file.url }}"
+               data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %}">
+              ▶ Play
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ h.recitation.surah.number }} -
+        {% t request h.recitation.surah "name" %}
+      </p>
+
+      <p class="card-sub">
+        {% t request h.recitation.reciter "name" %}
+        • {{ h.played_at }}
+      </p>
+
+      <div class="card-actions">
+        <a href="#"
+           data-play-one
+           data-audio="{{ h.recitation.audio_file.url }}"
+           data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %}">
+          ▶ Play
+        </a>
+      </div>
+
+    </div>
+  {% empty %}
+    <p>No history yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

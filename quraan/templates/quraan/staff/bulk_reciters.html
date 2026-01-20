@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Bulk Reciters | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Bulk Import Reciters (Staff)</h2>
+
+<p><b>CSV format:</b></p>
+<pre>
+name_en,name_ar,country_en,country_ar
+Abdul Basit,عبد الباسط,Saudi Arabia,السعودية
+Al-Husary,الحصري,Egypt,مصر
+</pre>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Import Reciters</button>
+</form>
+
+{% if created %}
+  <p><b>Created:</b> {{ created }}</p>
+{% endif %}
+
+{% if errors %}
+  <h3>Errors</h3>
+  <ul>
+    {% for e in errors %}
+      <li>{{ e }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

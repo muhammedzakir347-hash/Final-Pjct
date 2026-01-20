@@ -1,0 +1,34 @@
+﻿# Django
+db.sqlite3
+*.log
+local_settings.py
+
+# Media files - DO NOT COMMIT THESE
+media/
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

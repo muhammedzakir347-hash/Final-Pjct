@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Juz List | Islamic Web{% endblock %}
+
+{% block content %}
+<h2>Juz List</h2>
+
+<div class="cards">
+  {% for j in juzs %}
+    <div class="card">
+      <p class="card-title">
+        <a href="{% url 'juz_detail' j.pk %}">
+          Juz {{ j.number }} - {% t request j "name" %}
+        </a>
+      </p>
+
+      <div class="card-actions">
+        <a href="{% url 'juz_detail' j.pk %}">Open</a>
+      </div>
+    </div>
+  {% empty %}
+    <p>No juzs yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

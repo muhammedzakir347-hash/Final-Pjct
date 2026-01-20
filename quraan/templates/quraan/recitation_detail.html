@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}
+{% t request reciter "name" %} | Islamic Web
+{% endblock %}
+
+{% block content %}
+<h2>{% t request reciter "name" %}</h2>
+
+{% if reciter.image %}
+  <img src="{{ reciter.image.url }}" width="200" alt="{% t request reciter 'name' %}" 
+       style="border-radius:12px;margin-bottom:16px;">
+{% endif %}
+
+{# ---------------- Play All Button ---------------- #}
+<div class="play-all-container" style="margin-bottom:20px;">
+  <button class="play-all-btn" type="button" data-play-all data-queue-script="queue_reciter"
+          style="padding:10px 16px; border-radius:12px; font-weight:700; background:#1f2933; color:#fff; border:none; cursor:pointer;">
+    ▶ Play All
+  </button>
+</div>
+
+{# ---------------- Queue Script ---------------- #}
+<script id="queue_reciter" type="application/json">
+[
+{% for r in recitations %}
+  {
+    "audio": "{{ r.audio_file.url }}",
+    "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
+{# ---------------- Recitations Cards ---------------- #}
+<div class="cards">
+  {% for r in recitations %}
+    <div class="card">
+      {% if r.surah.image %}
+        <div class="card-media">
+          <img src="{{ r.surah.image.url }}" alt="{% t request r.surah 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn"
+               href="#"
+               data-play-one
+               data-audio="{{ r.audio_file.url }}"
+               data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})">
+              ▶ Play
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ r.surah.number }} - {% t request r.surah "name" %}
+      </p>
+
+      <p class="card-sub">
+        {% t request r.reciter "name" %} ({{ r.recitation_type }})
+      </p>
+
+      <div class="card-actions">
+        <a href="#"
+           data-play-one
+           data-audio="{{ r.audio_file.url }}"
+           data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})">
+          ▶ Play
+        </a>
+        <a href="{% url 'surah_detail' r.surah.id %}">Surah</a>
+      </div>
+    </div>
+  {% empty %}
+    <p>No recitations for this reciter yet.</p>
+  {% endfor %}
+</div>
+
+{# ---------------- Mini Player ---------------- #}
+<div class="mini-player" style="position:fixed;bottom:0;left:0;right:0;background:#1f2933;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999;border-top-left-radius:12px;border-top-right-radius:12px;">
+  <div class="mini-title" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw;">Not Playing</div>
+  <div class="mini-controls" style="display:flex;gap:8px;">
+    <button class="mini-prev-btn" style="padding:6px 12px;">⏮</button>
+    <button class="mini-play-btn" style="padding:6px 12px;">▶</button>
+    <button class="mini-next-btn" style="padding:6px 12px;">⏭</button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // SINGLE shared audio instance
+  const audio = new Audio();
+  let queue = [];
+  let index = 0;
+  let isQueuePlaying = false;
+
+  const playAllBtn = document.querySelector('[data-play-all]');
+  const miniPlayBtn = document.querySelector('.mini-play-btn');
+  const miniNextBtn = document.querySelector('.mini-next-btn');
+  const miniPrevBtn = document.querySelector('.mini-prev-btn');
+  const miniTitle = document.querySelector('.mini-title');
+
+  function updateMiniTitle(title) {
+    if (miniTitle) miniTitle.textContent = title;
+  }
+
+  function stopAudio() {
+    audio.pause();
+    audio.currentTime = 0;
+    isQueuePlaying = false;
+  }
+
+  function playTrack(i) {
+    if (!queue[i]) return;
+    index = i;
+    audio.src = queue[index].audio;
+    audio.play();
+    updateMiniTitle(queue[index].title);
+  }
+
+  function playNext() {
+    if (index + 1 < queue.length) {
+      playTrack(index + 1);
+    } else {
+      isQueuePlaying = false;
+      updateMiniTitle("Not Playing");
+    }
+  }
+
+  function playPrev() {
+    if (index > 0) playTrack(index - 1);
+  }
+
+  // --------- Play All Button ---------
+  if (playAllBtn) {
+    playAllBtn.addEventListener('click', function() {
+      const queueScriptId = playAllBtn.getAttribute('data-queue-script');
+      const queueScript = document.getElementById(queueScriptId);
+      if (!queueScript) return;
+
+      queue = JSON.parse(queueScript.textContent);
+      if (!queue.length) return;
+
+      isQueuePlaying = true;
+      playTrack(0);
+    });
+  }
+
+  // --------- Single Track Play Buttons ---------
+  document.querySelectorAll('[data-play-one]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Stop any playing audio
+      stopAudio();
+
+      queue = [{ audio: btn.dataset.audio, title: btn.dataset.title }];
+      playTrack(0);
+    });
+  });
+
+  // --------- Mini-player buttons ---------
+  if (miniPlayBtn) {
+    miniPlayBtn.addEventListener('click', function() {
+      if (!audio.src) return;
+      if (audio.paused) audio.play();
+      else audio.pause();
+    });
+  }
+  if (miniNextBtn) miniNextBtn.addEventListener('click', playNext);
+  if (miniPrevBtn) miniPrevBtn.addEventListener('click', playPrev);
+
+  // --------- When audio ends ---------
+  audio.addEventListener('ended', function() {
+    if (isQueuePlaying) playNext();
+  });
+});
+</script>
+{% endblock %}

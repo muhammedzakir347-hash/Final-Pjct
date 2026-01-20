@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load lang %}
+
+{% block title %}Home | Islamic Web{% endblock %}
+
+{% block content %}
+
+<h2>Top Reciters</h2>
+
+<div class="cards">
+  {% for r in reciters %}
+    <div class="card">
+      {% if r.image %}
+        <div class="card-media">
+          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn" href="{% url 'reciter_detail' r.id %}">Open</a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">{% t request r "name" %}</p>
+      <p class="card-sub">{% t request r "country" %}</p>
+
+    </div>
+  {% empty %}
+    <p>No reciters yet.</p>
+  {% endfor %}
+</div>
+
+<hr>
+
+<h2>Surahs</h2>
+
+<div class="cards">
+  {% for s in surahs %}
+    <div class="card">
+
+      {% if s.image %}
+        <div class="card-media">
+          <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+          <div class="play-overlay">
+            <a class="play-btn" href="{% url 'surah_detail' s.id %}">Open</a>
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="card-title">
+        {{ s.number }} - {% t request s "name" %}
+      </p>
+
+    </div>
+  {% empty %}
+    <p>No surahs yet.</p>
+  {% endfor %}
+</div>
+
+{% endblock %}
