@@ -81,7 +81,12 @@ class Recitation(models.Model):
     surah = models.ForeignKey(Surah, on_delete=models.CASCADE, related_name='recitations')
     audio_file = models.FileField(upload_to='recitations/', blank=True, null=True)
     recitation_type = models.CharField(max_length=50, blank=True)
-    
+    audio_file = models.FileField(
+        upload_to='recitations/',  # This will create 'recitations/' folder in S3
+        blank=True,
+        null=True,
+        verbose_name="Audio File"
+    )
     def __str__(self):
         return f"{self.reciter.name_en} - {self.surah.name_en}"
     

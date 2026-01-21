@@ -1,7 +1,13 @@
-
+"""
+Django settings for alquraan project.
+"""
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,17 +15,18 @@ SECRET_KEY = 'django-insecure-bf^)onh88)p2#3ta^871t)u_jcl=nq$itzejmf^*@ai1m_&b7^
 DEBUG = True
 ALLOWED_HOSTS = ['muhammedzakir.pythonanywhere.com', 'localhost', '127.0.0.1']
 
-# AWS S3 Configuration - Add these lines
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
-AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID = os.environ.get('AKIAWBPA3SQFWY4VRA7F', 'AKIAWBPA3SQFWY4VRA7F')
+AWS_SECRET_ACCESS_KEY = os.environ.get('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', '9SFBgAfMET1vJ0HyYW/l3mbE6mD5oMBK6ZLXoMW4')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'alquraan-audio-zakir-897')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'eu-north-1')
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
 AWS_DEFAULT_ACL = 'public-read'
 AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'storages',  # Add this for AWS S3
+    'storages',  # For AWS S3
     'accounts',
     'quraan',
 ]
@@ -98,16 +105,18 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_MANIFEST_STRICT = False
 
-# Media files (Audio, Images) - Use AWS S3 for production, local for development
-if DEBUG and not AWS_ACCESS_KEY_ID:
+# Media files (Audio, Images) - Use AWS S3 if credentials are set
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
+    # Use AWS S3 for media files
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    print(f"✓ Using AWS S3 for media storage: {AWS_STORAGE_BUCKET_NAME}")
+else:
     # Use local storage for development
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-else:
-    # Use AWS S3 for production
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    print("⚠ Using local storage for media files (AWS credentials not set)")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

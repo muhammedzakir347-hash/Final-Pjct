@@ -74,3 +74,32 @@ requirements (1).txt
 analyze_db.py
 check_images.py
 simple_export.py
+
+# Audio files
+*.mp3
+*.wav
+*.ogg
+*.m4a
+*.aac
+
+# Archive files
+*.zip
+*.rar
+*.7z
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# Test scripts
+*.test.py
+test_*.py
+check_*.py
+debug_*.py
+verify_*.py
