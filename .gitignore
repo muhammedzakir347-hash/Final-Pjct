@@ -42,3 +42,24 @@ Thumbs.db
 
 # PythonAnywhere
 .pythonanywhere
+
+# AWS credentials and sensitive data
+*.pem
+*.key
+*.p12
+*.cer
+*.crt
+*.pub
+config.json
+secrets.json
+credentials.json
+aws_credentials.txt
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Django secret key
+secret_key.txt

@@ -96,7 +96,7 @@ class Recitation(models.Model):
 
 
 class Playlist(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, default="My Playlist")  # Add default here
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='playlists')
     created_at = models.DateTimeField(auto_now_add=True)
     
