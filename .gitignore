@@ -63,3 +63,14 @@ aws_credentials.txt
 
 # Django secret key
 secret_key.txt
+# Database files
+*.sqlite3
+*.sqlite3-*
+db_backup_*.sqlite3
+clean_db.sqlite3
+
+# Temporary files
+requirements (1).txt
+analyze_db.py
+check_images.py
+simple_export.py
