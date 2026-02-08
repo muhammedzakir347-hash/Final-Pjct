@@ -50,6 +50,10 @@ urlpatterns = [
     path("favorites/add/", login_required(views.add_to_favorites), name="add_to_favorites"),
     path("playlists/add/", login_required(views.add_to_playlist), name="add_to_playlist"),
     path("playlists/<int:pk>/delete/", views.delete_playlist, name="delete_playlist"),
+    path("history/log/", views.log_play, name="log_play"),
+    path("record-play/", views.record_play, name="record_play"),
+
+
     
 
   

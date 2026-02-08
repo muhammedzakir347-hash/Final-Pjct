@@ -15,18 +15,25 @@ SECRET_KEY = 'django-insecure-bf^)onh88)p2#3ta^871t)u_jcl=nq$itzejmf^*@ai1m_&b7^
 DEBUG = True
 ALLOWED_HOSTS = ['muhammedzakir.pythonanywhere.com', 'localhost', '127.0.0.1']
 
-# AWS S3 Configuration
-AWS_ACCESS_KEY_ID = os.environ.get('AKIAWBPA3SQFWY4VRA7F', 'AKIAWBPA3SQFWY4VRA7F')
-AWS_SECRET_ACCESS_KEY = os.environ.get('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', '9SFBgAfMET1vJ0HyYW/l3mbE6mD5oMBK6ZLXoMW4')
-AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'alquraan-audio-zakir-897')
-AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'eu-north-1')
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+# =========================
+# AWS S3 Configuration (FIXED)
+# =========================
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "alquraan-audio-zakir-897")
+AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "eu-north-1")
+
 AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
+    "CacheControl": "max-age=86400",
 }
-AWS_DEFAULT_ACL = 'public-read'
+AWS_DEFAULT_ACL = "public-read"
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
+
+USE_S3 = all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME])
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -79,18 +86,10 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -105,18 +104,20 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_MANIFEST_STRICT = False
 
-# Media files (Audio, Images) - Use AWS S3 if credentials are set
-if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
-    # Use AWS S3 for media files
+
+# =========================
+# Media files (Audio, Images)
+# =========================
+if USE_S3:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
     print(f"✓ Using AWS S3 for media storage: {AWS_STORAGE_BUCKET_NAME}")
 else:
-    # Use local storage for development
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     print("⚠ Using local storage for media files (AWS credentials not set)")
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

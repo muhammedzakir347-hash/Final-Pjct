@@ -6,8 +6,11 @@
 {% block content %}
 <h2>Search</h2>
 
-<form method="get">
-  <input type="text" name="q" value="{{ q }}" placeholder="Search surah / reciter..." />
+<form method="get" class="auth-form" style="max-width:700px;">
+  <p>
+    <label for="q">Search</label><br>
+    <input id="q" type="text" name="q" value="{{ q }}" placeholder="Search surah / reciter..." />
+  </p>
   <button type="submit">Search</button>
 </form>
 
@@ -21,7 +24,7 @@
 
       {% if s.image %}
         <div class="card-media">
-          <img src="{{ s.get_image_url }}" alt="{% t request s 'name' %}">
+          <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
         </div>
       {% endif %}
 
@@ -30,7 +33,7 @@
       </p>
 
       <div class="card-actions">
-        <a href="{% url 'surah_detail' s.id %}">Open</a>
+        <a class="btn btn-secondary" href="{% url 'surah_detail' s.id %}">Open</a>
       </div>
 
     </div>
@@ -47,7 +50,7 @@
 
       {% if r.image %}
         <div class="card-media">
-          <img src="{{ r.get_image_url }}" alt="{% t request r 'name' %}">
+          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
         </div>
       {% endif %}
 
@@ -56,7 +59,7 @@
       </p>
 
       <div class="card-actions">
-        <a href="{% url 'reciter_detail' r.id %}">Open</a>
+        <a class="btn btn-secondary" href="{% url 'reciter_detail' r.id %}">Open</a>
       </div>
 
     </div>
@@ -68,22 +71,27 @@
 <!-- ================= RECITATIONS ================= -->
 <h3>Recitations</h3>
 
-<!-- ▶ PLAY ALL -->
-<button data-play-all data-queue-script="queue_search"
-        style="margin-bottom:12px;padding:8px 14px;border-radius:10px;">
-  ▶ Play All
-</button>
+{% if recitations %}
+  <!-- ▶ PLAY ALL -->
+  <button class="btn btn-primary btn-sm" type="button" data-play-all data-queue-script="queue_search"
+          style="margin-bottom:12px;">
+    ▶ Play All
+  </button>
 
-<script id="queue_search" type="application/json">
-[
-{% for r in recitations %}
-  {
-    "audio": "{{ r.audio_file.url }}",
-    "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
-  }{% if not forloop.last %},{% endif %}
-{% endfor %}
-]
-</script>
+  <!-- Queue (skip missing audio) -->
+  <script id="queue_search" type="application/json">
+  [
+  {% for r in recitations %}
+    {% if r.audio_file %}
+    {
+      "audio": "{{ r.audio_file.url }}",
+      "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+    }{% if not forloop.last %},{% endif %}
+    {% endif %}
+  {% endfor %}
+  ]
+  </script>
+{% endif %}
 
 <div class="cards">
   {% for rec in recitations %}
@@ -91,7 +99,7 @@
 
       {% if rec.surah.image %}
         <div class="card-media">
-          <img src="{{ rec.surah.get_image_url }}" alt="{% t request rec.surah 'name' %}">
+          <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
         </div>
       {% endif %}
 
@@ -103,41 +111,44 @@
         {% t request rec.reciter "name" %} ({{ rec.recitation_type }})
       </p>
 
-      <!-- ✅ STANDARD CARD ACTIONS -->
       <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
 
-        <a href="#"
-           data-play-one
-           data-audio="{{ rec.audio_file.url }}"
-           data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
-          ▶ Play
-        </a>
+        {% if rec.audio_file %}
+          <a class="btn btn-primary btn-sm"
+             href="#"
+             data-play-one
+             data-audio="{{ rec.audio_file.url }}"
+             data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+            ▶ Play
+          </a>
+        {% else %}
+          <span class="btn btn-neutral btn-sm" style="pointer-events:none;opacity:.8;">No Audio</span>
+        {% endif %}
 
-        <a href="{% url 'surah_detail' rec.surah.id %}">Surah</a>
-        <a href="{% url 'reciter_detail' rec.reciter.id %}">Reciter</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'surah_detail' rec.surah.id %}">Surah</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'reciter_detail' rec.reciter.id %}">Reciter</a>
 
         {% if request.user.is_authenticated %}
-        <form method="post" action="{% url 'add_to_favorites' %}">
-          {% csrf_token %}
-          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
-          <button type="submit">❤️</button>
-        </form>
+          <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+            <button class="btn btn-warning btn-sm" type="submit" title="Add to favorites">❤️</button>
+          </form>
 
-        <form method="post" action="{% url 'add_to_playlist' %}">
-          {% csrf_token %}
-          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
-          <select name="playlist_id" required>
-            <option value="">Playlist</option>
-            {% for p in request.user.playlist_set.all %}
-              <option value="{{ p.id }}">{{ p.name_en }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit">➕</button>
-        </form>
+          <form method="post" action="{% url 'add_to_playlist' %}" class="inline-form" style="display:inline-flex;gap:6px;align-items:center;">
+            {% csrf_token %}
+            <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+            <select name="playlist_id" required class="select-sm">
+              <option value="">Playlist</option>
+              {% for p in request.user.playlists.all %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-success btn-sm" type="submit" title="Add to playlist">➕</button>
+          </form>
         {% endif %}
 
       </div>
-
     </div>
   {% empty %}
     <p>No recitations found.</p>

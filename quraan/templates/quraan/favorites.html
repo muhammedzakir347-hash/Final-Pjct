@@ -11,7 +11,7 @@
     <div class="card">
       {% if f.recitation.surah.image %}
         <div class="card-media">
-          <img src="{{ f.recitation.surah.get_image_url }}" alt="{% t request f.recitation.surah 'name' %}">
+          <img src="{{ f.recitation.surah.image.url }}" alt="{% t request f.recitation.surah 'name' %}">
           <div class="play-overlay">
             <a class="play-btn"
                href="#"

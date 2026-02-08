@@ -6,7 +6,7 @@ Juz {{ juz.number }} | Islamic Web
 {% endblock %}
 
 {% block content %}
-<h2>Juz {{ juz.number }} - {% t request juz "name" %}</h2> 
+<h2>Juz {{ juz.number }}</h2>
 
 {# ---------------- Play All Button ---------------- #}
 <div class="play-all-container" style="margin-bottom:20px;">
@@ -16,14 +16,16 @@ Juz {{ juz.number }} | Islamic Web
   </button>
 </div>
 
-{# ---------------- JSON Queue ---------------- #}
+{# ---------------- JSON Queue (skip items without audio) ---------------- #}
 <script id="queue_juz" type="application/json">
 [
 {% for r in recitations %}
+  {% if r.audio_file %}
   {
     "audio": "{{ r.audio_file.url }}",
     "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
   }{% if not forloop.last %},{% endif %}
+  {% endif %}
 {% endfor %}
 ]
 </script>
@@ -33,17 +35,21 @@ Juz {{ juz.number }} | Islamic Web
 <div class="cards">
   {% for r in recitations %}
     <div class="card">
+
       {% if r.surah.image %}
         <div class="card-media">
-          <img src="{{ r.surah.get_image_url }}" alt="{% t request r.surah 'name' %}">
+          <img src="{{ r.surah.image.url }}" alt="{% t request r.surah 'name' %}">
           <div class="play-overlay">
-            <a class="play-btn"
-               href="#"
-               data-play-one
-               data-audio="{{ r.audio_file.url }}"
-               data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})">
-              ▶ Play
-            </a>
+            {% if r.audio_file %}
+              <a class="play-btn"
+                 href="#"
+                 data-play-one
+                 data-recitation-id="{{ r.id }}"
+                 data-audio="{{ r.audio_file.url }}"
+                 data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})">
+                ▶ Play
+              </a>
+            {% endif %}
           </div>
         </div>
       {% endif %}
@@ -58,20 +64,28 @@ Juz {{ juz.number }} | Islamic Web
 
       <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
 
-        <!-- Play button -->
+        {% if r.audio_file %}
         <a class="play-btn-inline"
            href="#"
            data-play-one
+           data-recitation-id="{{ r.id }}"
            data-audio="{{ r.audio_file.url }}"
            data-title="{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
            style="padding:6px 12px; border-radius:8px; background:#1f2933; color:#fff; text-decoration:none;">
           ▶ Play
         </a>
+        {% else %}
+        <span style="padding:6px 12px;border-radius:8px;background:#e5e7eb;color:#374151;">
+          No audio
+        </span>
+        {% endif %}
 
-        <!-- Surah link -->
-        <a href="{% url 'surah_detail' r.surah.id %}" style="padding:6px 12px; border-radius:8px; background:#3b82f6; color:#fff; text-decoration:none;">Surah</a>
+        <a href="{% url 'surah_detail' r.surah.id %}"
+           style="padding:6px 12px; border-radius:8px; background:#3b82f6; color:#fff; text-decoration:none;">
+          Surah
+        </a>
 
-        <!-- Add to Favorites -->
+        {% if request.user.is_authenticated %}
         <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
           {% csrf_token %}
           <input type="hidden" name="recitation_id" value="{{ r.id }}">
@@ -80,15 +94,13 @@ Juz {{ juz.number }} | Islamic Web
           </button>
         </form>
 
-        <!-- Add to Playlist -->
-        {% if request.user.is_authenticated %}
         <form method="post" action="{% url 'add_to_playlist' %}" style="display:inline; flex-wrap:wrap;">
           {% csrf_token %}
           <input type="hidden" name="recitation_id" value="{{ r.id }}">
           <select name="playlist_id" required style="padding:6px 8px; border-radius:8px; border:1px solid #ccc;">
             <option value="">Select Playlist</option>
-            {% for p in request.user.playlist_set.all %}
-              <option value="{{ p.id }}">{{ p.name_en }}</option>
+            {% for p in request.user.playlists.all %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
             {% endfor %}
           </select>
           <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#10b981; color:#fff; cursor:pointer;">
@@ -104,78 +116,4 @@ Juz {{ juz.number }} | Islamic Web
   {% endfor %}
 </div>
 
-{# ---------------- Mini Player ---------------- #}
-<div class="mini-player" style="position:fixed;bottom:0;left:0;right:0;background:#1f2933;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999;border-top-left-radius:12px;border-top-right-radius:12px;">
-  <div class="mini-title" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw;">Not Playing</div>
-  <div class="mini-controls" style="display:flex;gap:8px;">
-    <button class="mini-prev-btn" style="padding:6px 12px;">⏮</button>
-    <button class="mini-play-btn" style="padding:6px 12px;">▶</button>
-    <button class="mini-next-btn" style="padding:6px 12px;">⏭</button>
-  </div>
-</div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const audio = new Audio();
-  let queue = [];
-  let index = 0;
-  let isQueuePlaying = false;
-
-  const miniTitle = document.querySelector('.mini-title');
-  const playAllBtn = document.querySelector('[data-play-all]');
-  const miniPlayBtn = document.querySelector('.mini-play-btn');
-  const miniNextBtn = document.querySelector('.mini-next-btn');
-  const miniPrevBtn = document.querySelector('.mini-prev-btn');
-
-  function updateMiniTitle(title) { if (miniTitle) miniTitle.textContent = title; }
-
-  function stopAudio() { audio.pause(); audio.currentTime = 0; }
-
-  function playTrack(trackIndex) {
-    if (!queue[trackIndex]) return;
-    index = trackIndex;
-    audio.src = queue[index].audio;
-    audio.play();
-    updateMiniTitle(queue[index].title);
-  }
-
-  function playNext() { if (index + 1 < queue.length) playTrack(index + 1); else { isQueuePlaying = false; updateMiniTitle("Not Playing"); } }
-  function playPrev() { if (index > 0) playTrack(index - 1); }
-
-  if (playAllBtn) {
-    playAllBtn.addEventListener('click', function() {
-      const queueScriptId = playAllBtn.getAttribute('data-queue-script');
-      const queueScript = document.getElementById(queueScriptId);
-      if (!queueScript) return;
-      queue = JSON.parse(queueScript.textContent);
-      if (!queue.length) return;
-      isQueuePlaying = true;
-      playTrack(0);
-    });
-  }
-
-  document.querySelectorAll('[data-play-one]').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      stopAudio();
-      isQueuePlaying = false;
-      queue = [{ audio: btn.dataset.audio, title: btn.dataset.title }];
-      playTrack(0);
-    });
-  });
-
-  audio.addEventListener('ended', function() { if (isQueuePlaying) playNext(); });
-
-  if (miniPlayBtn) miniPlayBtn.addEventListener('click', function() {
-    if (audio.src) audio.paused ? audio.play() : audio.pause();
-  });
-
-  if (miniNextBtn) miniNextBtn.addEventListener('click', playNext);
-  if (miniPrevBtn) miniPrevBtn.addEventListener('click', playPrev);
-
-});
-</script>
 {% endblock %}

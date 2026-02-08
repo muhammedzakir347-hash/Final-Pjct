@@ -6,51 +6,118 @@ Play | {% t request recitation.surah "name" %} | Islamic Web
 {% endblock %}
 
 {% block content %}
-<h2>Recitation</h2>
+<div class="container">
 
-<p>
-  <b>Surah:</b> {{ recitation.surah.number }} - {% t request recitation.surah "name" %}<br>
-  <b>Reciter:</b> {% t request recitation.reciter "name" %}<br>
-  <b>Type:</b> {{ recitation.recitation_type }}
-</p>
+  <div class="page-header">
+    <h1 class="page-title">Now Playing</h1>
+    <p class="page-subtitle">
+      {{ recitation.surah.number }} - {% t request recitation.surah "name" %}
+      — {% t request recitation.reciter "name" %}
+    </p>
+  </div>
 
-<!-- Favorite button -->
-<form method="post">
-  {% csrf_token %}
-  <button type="submit" name="action" value="favorite" {% if is_favorite %}disabled{% endif %}>
-    {% if is_favorite %}Added to Favorites{% else %}Add to Favorites{% endif %}
-  </button>
-</form>
+  <div class="section">
+    <div class="cards">
+      <div class="card recitation-card">
 
-<hr>
+        {% if recitation.surah.get_image_url %}
+          <div class="card-media">
+            <img src="{{ recitation.surah.get_image_url }}" alt="{% t request recitation.surah 'name' %}">
+            <div class="play-overlay">
+              <button
+                type="button"
+                class="btn btn-primary play-btn"
+                data-play-one
+                data-audio="{{ recitation.audio_file.url }}"
+                data-title="{{ recitation.surah.number }} - {% t request recitation.surah 'name' %} — {% t request recitation.reciter 'name' %} ({{ recitation.recitation_type }})"
+                aria-label="Play recitation">
+                ▶
+              </button>
+            </div>
+          </div>
+        {% endif %}
 
-<!-- Add to playlist -->
-<form method="post">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="add_to_playlist">
+        <div class="card-body">
 
-  <label>Add to playlist:</label>
-  <select name="playlist_id" required>
-    <option value="">Select</option>
-    {% for p in playlists %}
-      <option value="{{ p.id }}">{% t request p "name" %}</option>
-    {% endfor %}
-  </select>
+          <div class="card-header">
+            <h3 class="card-title">
+              {{ recitation.surah.number }} - {% t request recitation.surah "name" %}
+            </h3>
 
-  <button type="submit">Add</button>
-</form>
+            <p class="card-subtitle">
+              <span aria-hidden="true">👤</span> {% t request recitation.reciter "name" %}
+            </p>
 
-<hr>
+            <div class="card-meta">
+              <span class="badge badge-type">{{ recitation.recitation_type|title }}</span>
 
-<!-- Mini-player only (no page audio) -->
-<button type="button"
-        data-play-one
-        data-audio="{{ recitation.audio_file.url }}"
-        data-title="{{ recitation.surah.number }} - {% t request recitation.surah 'name' %} — {% t request recitation.reciter 'name' %} ({{ recitation.recitation_type }})">
-  ▶ Play in Mini Player
-</button>
+              {% if recitation.surah.juz.all %}
+                <span class="badge badge-juz">
+                  {% for juz in recitation.surah.juz.all %}
+                    Juz {{ juz.number }}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                </span>
+              {% endif %}
+            </div>
+          </div>
 
-<p style="margin-top:16px;">
-  <a href="{% url 'surah_detail' recitation.surah.id %}">Back to Surah</a>
-</p>
+          <div class="card-actions">
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-play-one
+              data-audio="{{ recitation.audio_file.url }}"
+              data-title="{{ recitation.surah.number }} - {% t request recitation.surah 'name' %} — {% t request recitation.reciter 'name' %} ({{ recitation.recitation_type }})">
+              ▶ Play
+            </button>
+
+            <a href="{% url 'surah_detail' recitation.surah.id %}" class="btn btn-secondary">
+              Surah
+            </a>
+
+            <form method="post" class="inline-form">
+              {% csrf_token %}
+              <button
+                type="submit"
+                name="action"
+                value="favorite"
+                class="btn btn-outline btn-favorite"
+                {% if is_favorite %}disabled aria-disabled="true"{% endif %}
+                title="{% if is_favorite %}Already in favorites{% else %}Add to favorites{% endif %}">
+                {% if is_favorite %}❤️{% else %}♡{% endif %}
+              </button>
+            </form>
+
+            <form method="post" class="inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="add_to_playlist">
+
+              <label class="sr-only" for="pl_add_{{ recitation.id }}">Playlist</label>
+              <select id="pl_add_{{ recitation.id }}" name="playlist_id" required class="select-sm">
+                <option value="">Playlist</option>
+                {% for p in playlists %}
+                  <option value="{{ p.id }}">{% t request p "name" %}</option>
+                {% endfor %}
+              </select>
+
+              <button type="submit" class="btn btn-success btn-sm" title="Add to playlist" aria-label="Add to playlist">
+                +
+              </button>
+            </form>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <a href="{% url 'surah_detail' recitation.surah.id %}" class="btn btn-outline btn-sm">
+        ← Back to Surah
+      </a>
+    </div>
+
+  </div>
+</div>
 {% endblock %}

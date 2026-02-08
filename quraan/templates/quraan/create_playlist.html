@@ -1,20 +1,49 @@
 {% extends "base.html" %}
-{% load lang %}
 
 {% block title %}Create Playlist | Islamic Web{% endblock %}
 
 {% block content %}
-<h2>Create Playlist</h2>
+<div class="container">
 
-<form method="post">
-  {% csrf_token %}
+  <div class="page-header">
+    <h1 class="page-title">Create Playlist</h1>
+    <p class="page-subtitle">Give your playlist a name</p>
+  </div>
 
-  <label>Playlist Name (EN)</label><br>
-  <input type="text" name="name_en" required><br><br>
+  <div class="section">
+    <div class="card" style="max-width:480px;">
+      <div class="card-body">
 
-  <label>اسم القائمة</label><br>
-  <input type="text" name="name_ar" required><br><br>
+        <form method="post">
+          {% csrf_token %}
 
-  <button type="submit">Create</button>
-</form>
+          <div class="form-group">
+            <label for="name" class="form-label">Playlist Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="input"
+              placeholder="My Favorite Recitations"
+              required
+            >
+          </div>
+
+          <div class="form-actions" style="margin-top:16px;">
+            <button type="submit" class="btn btn-primary">
+              ➕ Create Playlist
+            </button>
+
+            <a href="{% url 'playlists' %}" class="btn btn-secondary">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+</div>
 {% endblock %}

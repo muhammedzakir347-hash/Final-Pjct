@@ -1,28 +1,63 @@
-    {% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Register | Islamic Web{% endblock %}
 
 {% block content %}
 <h2>Create Account</h2>
 
-<form method="post" class="auth-form">
+<form method="post" class="auth-form" novalidate>
   {% csrf_token %}
 
   {{ form.non_field_errors }}
 
   <p>
-    {{ form.username.label_tag }}<br>
-    {{ form.username }}
+    <label for="id_username">Username</label><br>
+    <input
+      type="text"
+      name="username"
+      id="id_username"
+      value="{{ form.username.value|default_if_none:'' }}"
+      autocomplete="username"
+      required
+    >
+    {{ form.username.errors }}
   </p>
 
   <p>
-    {{ form.password1.label_tag }}<br>
-    {{ form.password1 }}
+    <label for="id_email">Email</label><br>
+    <input
+      type="email"
+      name="email"
+      id="id_email"
+      value="{{ form.email.value|default_if_none:'' }}"
+      autocomplete="email"
+      required
+    >
+    {{ form.email.errors }}
   </p>
 
   <p>
-    {{ form.password2.label_tag }}<br>
-    {{ form.password2 }}
+    <label for="id_password1">Password</label><br>
+    <input
+      type="password"
+      name="password1"
+      id="id_password1"
+      autocomplete="new-password"
+      required
+    >
+    {{ form.password1.errors }}
+  </p>
+
+  <p>
+    <label for="id_password2">Confirm Password</label><br>
+    <input
+      type="password"
+      name="password2"
+      id="id_password2"
+      autocomplete="new-password"
+      required
+    >
+    {{ form.password2.errors }}
   </p>
 
   <button type="submit">Register</button>

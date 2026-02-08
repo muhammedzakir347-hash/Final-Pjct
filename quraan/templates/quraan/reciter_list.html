@@ -12,7 +12,7 @@
 
       {% if r.image %}
         <div class="card-media">
-          <img src="{{ r.get_image_url }}" alt="{% t request r 'name' %}">
+          <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
         </div>
       {% endif %}
 

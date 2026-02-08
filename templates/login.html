@@ -5,19 +5,34 @@
 {% block content %}
 <h2>Login</h2>
 
-<form method="post" action="{% url 'login' %}">
+<form method="post" action="{% url 'login' %}" class="auth-form" novalidate>
   {% csrf_token %}
 
   {{ form.non_field_errors }}
 
   <p>
-    {{ form.username.label_tag }}<br>
-    {{ form.username }}
+    <label for="id_username">Username</label><br>
+    <input
+      type="text"
+      name="username"
+      id="id_username"
+      value="{{ form.username.value|default_if_none:'' }}"
+      autocomplete="username"
+      required
+    >
+    {{ form.username.errors }}
   </p>
 
   <p>
-    {{ form.password.label_tag }}<br>
-    {{ form.password }}
+    <label for="id_password">Password</label><br>
+    <input
+      type="password"
+      name="password"
+      id="id_password"
+      autocomplete="current-password"
+      required
+    >
+    {{ form.password.errors }}
   </p>
 
   <button type="submit">Login</button>

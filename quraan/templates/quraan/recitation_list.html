@@ -20,7 +20,7 @@
         <a href="{% url 'recitation_list' %}" class="filter-reset">Reset Filters</a>
       {% endif %}
     </div>
-    
+
     <form method="get" class="filter-form">
       <div class="filter-grid">
         <!-- Surah Filter -->
@@ -56,7 +56,7 @@
             <option value="">All Juz</option>
             {% for j in juzs %}
               <option value="{{ j.id }}" {% if selected_juz == j.id|stringformat:"s" %}selected{% endif %}>
-                Juz {{ j.number }} - {% t request j "name" %}
+                Juz {{ j.number }}
               </option>
             {% endfor %}
           </select>
@@ -64,9 +64,7 @@
       </div>
 
       <div class="filter-actions">
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-filter"></i> Apply Filters
-        </button>
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
       </div>
     </form>
   </div>
@@ -74,38 +72,39 @@
   <!-- Results Section -->
   <div class="section">
     <div class="section-head">
-      <h3>Recitations</h3>
+      <h3 class="mb-0">Recitations</h3>
+
       <div class="section-head-right">
         <div class="results-count">
           {% if recitations %}
             {{ recitations|length }} recitation{{ recitations|length|pluralize }}
-            {% if selected_surah or selected_reciter or selected_juz %}
-              (filtered)
-            {% endif %}
+            {% if selected_surah or selected_reciter or selected_juz %}(filtered){% endif %}
           {% endif %}
         </div>
+
         {% if recitations %}
-        <div class="play-all-container">
-          <button class="btn btn-primary btn-sm" type="button" data-play-all data-queue-script="queue_all">
-            <i class="fas fa-play"></i> Play All
-          </button>
-        </div>
+          <div class="play-all-container">
+            <button class="btn btn-primary btn-sm" type="button" data-play-all data-queue-script="queue_all">
+              Play All
+            </button>
+          </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- JSON Queue for all recitations -->
+    {# ✅ Play All Queue JSON (ALWAYS valid JSON — no comma problems) #}
     {% if recitations %}
-    <script id="queue_all" type="application/json">
-    [
-    {% for rec in recitations %}
-      {
-        "audio": "{{ rec.audio_file.url }}",
-        "title": "{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
-      }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    ]
-    </script>
+      <script id="queue_all" type="application/json">
+      [
+      {% for rec in recitations %}
+        {
+          "id": "{{ rec.id }}",
+          "audio": "{% if rec.audio_file %}{{ rec.audio_file.url }}{% else %}{% endif %}",
+          "title": "{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+      ]
+      </script>
     {% endif %}
 
     {% if recitations %}
@@ -113,17 +112,24 @@
       <div class="cards">
         {% for rec in recitations %}
           <div class="card recitation-card">
-            <!-- Card Media -->
-            {% if rec.surah.image %}
+
+            {# ✅ Image FIX: use image.url directly #}
+            {% if rec.surah.image and rec.surah.image.name %}
               <div class="card-media">
-                <img src="{{ rec.surah.get_image_url }}" alt="{% t request rec.surah 'name' %}">
+                <img src="{{ rec.surah.image.url }}" alt="{% t request rec.surah 'name' %}">
                 <div class="play-overlay">
-                  <button class="btn btn-primary play-btn"
-                          data-play-one
-                          data-audio="{{ rec.audio_file.url }}"
-                          data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
-                    <i class="fas fa-play"></i>
-                  </button>
+                  {% if rec.audio_file %}
+                    <button
+                      type="button"
+                      class="btn btn-primary play-btn"
+                      data-play-one
+                      data-recitation-id="{{ rec.id }}"
+                      data-audio="{{ rec.audio_file.url }}"
+                      data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
+                      aria-label="Play recitation">
+                      ▶
+                    </button>
+                  {% endif %}
                 </div>
               </div>
             {% endif %}
@@ -133,11 +139,14 @@
                 <h3 class="card-title">
                   {{ rec.surah.number }} - {% t request rec.surah "name" %}
                 </h3>
+
                 <p class="card-subtitle">
-                  <i class="fas fa-user"></i> {% t request rec.reciter "name" %}
+                  <span aria-hidden="true">👤</span> {% t request rec.reciter "name" %}
                 </p>
+
                 <div class="card-meta">
                   <span class="badge badge-type">{{ rec.recitation_type|title }}</span>
+
                   {% if rec.surah.juz.all %}
                     <span class="badge badge-juz">
                       {% for juz in rec.surah.juz.all %}
@@ -149,39 +158,47 @@
               </div>
 
               <div class="card-actions">
-                <button class="btn btn-primary"
-                        data-play-one
-                        data-audio="{{ rec.audio_file.url }}"
-                        data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
-                  <i class="fas fa-play"></i> Play
-                </button>
-                
-                <a href="{% url 'surah_detail' rec.surah.id %}" class="btn btn-secondary">
-                  <i class="fas fa-book"></i> Surah
-                </a>
-                
+                {% if rec.audio_file %}
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-play-one
+                    data-recitation-id="{{ rec.id }}"
+                    data-audio="{{ rec.audio_file.url }}"
+                    data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+                    Play
+                  </button>
+                {% else %}
+                  <span class="btn btn-neutral btn-sm" style="pointer-events:none;opacity:.8;">No Audio</span>
+                {% endif %}
+
+                <a href="{% url 'surah_detail' rec.surah.id %}" class="btn btn-secondary">Surah</a>
+
                 {% if user.is_authenticated %}
                   <!-- Add to Favorites -->
                   <form method="post" action="{% url 'add_to_favorites' %}" class="favorite-form">
                     {% csrf_token %}
                     <input type="hidden" name="recitation_id" value="{{ rec.id }}">
-                    <button type="submit" class="btn btn-outline btn-favorite" title="Add to Favorites">
-                      <i class="far fa-heart"></i>
+                    <button type="submit" class="btn btn-outline btn-favorite" title="Add to Favorites" aria-label="Add to favorites">
+                      ♡
                     </button>
                   </form>
-                  
+
                   <!-- Add to Playlist -->
                   <form method="post" action="{% url 'add_to_playlist' %}" class="inline-form">
                     {% csrf_token %}
                     <input type="hidden" name="recitation_id" value="{{ rec.id }}">
-                    <select name="playlist_id" required class="select-sm">
+
+                    <label class="sr-only" for="pl_{{ rec.id }}">Playlist</label>
+                    <select id="pl_{{ rec.id }}" name="playlist_id" required class="select-sm">
                       <option value="">Playlist</option>
-                      {% for p in user.playlist_set.all %}
-                        <option value="{{ p.id }}">{{ p.name_en }}</option>
+                      {% for p in request.user.playlists.all %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
                       {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-success btn-sm">
-                      <i class="fas fa-plus"></i>
+
+                    <button type="submit" class="btn btn-success btn-sm" title="Add to playlist" aria-label="Add to playlist">
+                      +
                     </button>
                   </form>
                 {% endif %}
@@ -195,18 +212,20 @@
       {% if recitations.has_other_pages %}
         <div class="pagination">
           {% if recitations.has_previous %}
-            <a href="?page={{ recitations.previous_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}" class="btn btn-outline">
-              <i class="fas fa-chevron-left"></i> Previous
+            <a href="?page={{ recitations.previous_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}"
+               class="btn btn-outline btn-sm">
+              ← Previous
             </a>
           {% endif %}
-          
+
           <span class="page-info">
             Page {{ recitations.number }} of {{ recitations.paginator.num_pages }}
           </span>
-          
+
           {% if recitations.has_next %}
-            <a href="?page={{ recitations.next_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}" class="btn btn-outline">
-              Next <i class="fas fa-chevron-right"></i>
+            <a href="?page={{ recitations.next_page_number }}{% if selected_surah %}&surah={{ selected_surah }}{% endif %}{% if selected_reciter %}&reciter={{ selected_reciter }}{% endif %}{% if selected_juz %}&juz={{ selected_juz }}{% endif %}"
+               class="btn btn-outline btn-sm">
+              Next →
             </a>
           {% endif %}
         </div>
@@ -215,14 +234,10 @@
     {% else %}
       <!-- No Results -->
       <div class="no-results">
-        <div class="no-results-icon">
-          <i class="fas fa-search"></i>
-        </div>
+        <div class="no-results-icon" aria-hidden="true">🔎</div>
         <h3>No recitations found</h3>
         <p>Try adjusting your filters or browse all recitations</p>
-        <a href="{% url 'recitation_list' %}" class="btn btn-primary">
-          View All Recitations
-        </a>
+        <a href="{% url 'recitation_list' %}" class="btn btn-primary">View All Recitations</a>
       </div>
     {% endif %}
   </div>
@@ -232,99 +247,31 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Filter functionality
-  const filterSelects = document.querySelectorAll('.filter-select');
-  
-  filterSelects.forEach(select => {
-    select.addEventListener('change', function() {
-      // Optional: Uncomment to auto-submit on change
-      // this.form.submit();
-    });
-  });
-  
-  // Play All functionality
-  const playAllBtn = document.querySelector('[data-play-all]');
-  if (playAllBtn) {
-    playAllBtn.addEventListener('click', function() {
-      const queueScriptId = playAllBtn.getAttribute('data-queue-script');
-      const queueScript = document.getElementById(queueScriptId);
-      if (!queueScript) return;
-      
-      try {
-        const queue = JSON.parse(queueScript.textContent);
-        if (!queue.length) {
-          alert('No recitations to play.');
-          return;
-        }
-        
-        // Implement your play all logic here
-        console.log('Playing all recitations:', queue);
-        
-        // For now, play the first one
-        if (queue[0]) {
-          const firstRec = queue[0];
-          const playEvent = new CustomEvent('playAudio', {
-            detail: {
-              audio: firstRec.audio,
-              title: firstRec.title,
-              queue: queue
-            }
-          });
-          document.dispatchEvent(playEvent);
-        }
-      } catch (error) {
-        console.error('Error parsing queue:', error);
-      }
-    });
-  }
-  
-  // Individual play buttons
-  document.querySelectorAll('[data-play-one]').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      const audio = this.getAttribute('data-audio');
-      const title = this.getAttribute('data-title');
-      
-      const playEvent = new CustomEvent('playAudio', {
-        detail: { audio, title }
-      });
-      document.dispatchEvent(playEvent);
-    });
-  });
-  
-  // Display active filters
   const activeFilters = [];
-  
-  // Check filters directly from DOM instead of using template variables
+
   const surahSelect = document.getElementById('surah');
   const reciterSelect = document.getElementById('reciter');
   const juzSelect = document.getElementById('juz');
-  
+
   if (surahSelect && surahSelect.value) {
-    const selectedOption = surahSelect.options[surahSelect.selectedIndex];
-    activeFilters.push('Surah: ' + selectedOption.text);
+    activeFilters.push('Surah: ' + surahSelect.options[surahSelect.selectedIndex].text);
   }
-  
   if (reciterSelect && reciterSelect.value) {
-    const selectedOption = reciterSelect.options[reciterSelect.selectedIndex];
-    activeFilters.push('Reciter: ' + selectedOption.text);
+    activeFilters.push('Reciter: ' + reciterSelect.options[reciterSelect.selectedIndex].text);
   }
-  
   if (juzSelect && juzSelect.value) {
-    const selectedOption = juzSelect.options[juzSelect.selectedIndex];
-    activeFilters.push('Juz: ' + selectedOption.text);
+    activeFilters.push('Juz: ' + juzSelect.options[juzSelect.selectedIndex].text);
   }
-  
-  // Show active filters badge if there are any
+
   if (activeFilters.length > 0) {
-    const resultsHeader = document.querySelector('.section-head');
-    if (resultsHeader) {
-      const filterBadge = document.createElement('span');
-      filterBadge.className = 'badge badge-juz';
-      filterBadge.textContent = activeFilters.length + ' filter' + (activeFilters.length > 1 ? 's' : '');
-      filterBadge.title = activeFilters.join('\n');
-      filterBadge.style.cursor = 'help';
-      resultsHeader.appendChild(filterBadge);
+    const right = document.querySelector('.section-head-right');
+    if (right) {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-juz';
+      badge.textContent = activeFilters.length + ' filter' + (activeFilters.length > 1 ? 's' : '');
+      badge.title = activeFilters.join('\n');
+      badge.style.cursor = 'help';
+      right.appendChild(badge);
     }
   }
 });

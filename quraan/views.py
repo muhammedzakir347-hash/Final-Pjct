@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from .models import Surah, Reciter, Recitation, Juz,PlayHistory,Favorite,Playlist,PlaylistItem
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q,Max
 from .forms import CustomUserCreationForm
 from django.contrib.auth import login
 from .forms import RecitationForm
@@ -11,15 +11,59 @@ import csv
 from io import StringIO
 from django.db import transaction
 from .forms import BulkTextForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
 
 
 
 
 def home(request):
-    surahs = Surah.objects.prefetch_related("recitations").all()
-    reciters = Reciter.objects.all().order_by("name_en")[:8]  # show top 8
-    return render(request, "quraan/home.html", {"surahs": surahs,"reciters": reciters,})
+    # ✅ Top 20 surahs (for horizontal scroll)
+    top_surahs = Surah.objects.order_by("number")[:20]
 
+    # ✅ Top reciters (keep your current logic)
+    reciters = Reciter.objects.all().order_by("name_en")[:8]
+
+    # ✅ Recently viewed (default empty)
+    recent_reciters = []
+    recent_surahs = []
+
+    if request.user.is_authenticated:
+        recent_plays = (
+            PlayHistory.objects
+            .filter(user=request.user)
+            .select_related("recitation__surah", "recitation__reciter")
+            .order_by("-played_at")[:200]   # more to avoid duplicates
+        )
+
+        seen_reciters = set()
+        seen_surahs = set()
+
+        # 10 recent reciters
+        for ph in recent_plays:
+            rec = ph.recitation
+            if rec and rec.reciter_id and rec.reciter_id not in seen_reciters:
+                recent_reciters.append(rec.reciter)
+                seen_reciters.add(rec.reciter_id)
+                if len(recent_reciters) == 10:
+                    break
+
+        # 10 recent surahs
+        for ph in recent_plays:
+            rec = ph.recitation
+            if rec and rec.surah_id and rec.surah_id not in seen_surahs:
+                recent_surahs.append(rec.surah)
+                seen_surahs.add(rec.surah_id)
+                if len(recent_surahs) == 10:
+                    break
+
+    return render(request, "quraan/home.html", {
+        "top_surahs": top_surahs,          # ✅ new
+        "reciters": reciters,              # ✅ existing (top 8)
+        "recent_reciters": recent_reciters,# ✅ new
+        "recent_surahs": recent_surahs,    # ✅ new
+    })
 
 def surah_list(request):
     surahs = Surah.objects.prefetch_related("recitations").all()
@@ -89,7 +133,6 @@ def recitation_play(request, pk):
     # user playlists
     playlists = Playlist.objects.filter(user=request.user).order_by("-created_at")
 
-    # handle actions
     if request.method == "POST":
         action = request.POST.get("action")
 
@@ -101,11 +144,15 @@ def recitation_play(request, pk):
             playlist_id = request.POST.get("playlist_id")
             if playlist_id:
                 playlist = get_object_or_404(Playlist, pk=playlist_id, user=request.user)
+
+                next_order = (playlist.items.aggregate(Max("order"))["order__max"] or 0) + 1
+
                 PlaylistItem.objects.get_or_create(
                     playlist=playlist,
                     recitation=recitation,
-                    defaults={"position": playlist.items.count() + 1}
+                    defaults={"order": next_order}
                 )
+
             return redirect("recitation_play", pk=recitation.pk)
 
     is_favorite = Favorite.objects.filter(user=request.user, recitation=recitation).exists()
@@ -115,6 +162,7 @@ def recitation_play(request, pk):
         "is_favorite": is_favorite,
         "playlists": playlists,
     })
+
 
 
 @login_required
@@ -131,21 +179,19 @@ def favorites_list(request):
     )
     return render(request, "quraan/favorites.html", {"favorites": favorites})
 
+
+
 @login_required
 def create_playlist(request):
     if request.method == "POST":
-        name_en = request.POST.get("name_en")
-        name_ar = request.POST.get("name_ar")
+        name = (request.POST.get("name") or "").strip()
 
-        if name_en and name_ar:
-            Playlist.objects.create(
-                user=request.user,
-                name_en=name_en,
-                name_ar=name_ar
-            )
-            return redirect("home")
+        if name:
+            Playlist.objects.create(user=request.user, name=name)
+            return redirect("playlists")  # or "home" if you prefer
 
     return render(request, "quraan/create_playlist.html")
+
 
 @login_required
 def playlists_list(request):
@@ -162,23 +208,33 @@ def playlist_detail(request, pk):
         item.delete()
         return redirect("playlist_detail", pk=playlist.pk)
 
-    items = playlist.items.select_related(
-        "recitation__surah",
-        "recitation__reciter"
-    ).order_by("position")
+    items = (
+        playlist.items
+        .select_related("recitation__surah", "recitation__reciter")
+        .order_by("order", "id")
+    )
 
-    return render(request, "quraan/playlist_detail.html", {"playlist": playlist, "items": items})
+    playlists = Playlist.objects.filter(user=request.user).order_by("-created_at")
+
+    return render(request, "quraan/playlist_detail.html", {
+        "playlist": playlist,
+        "items": items,
+        "playlists": playlists,   # ✅ add this
+    })
+
 
 
 @login_required
-def history_list(request):
-    history = (
-        PlayHistory.objects
-        .filter(user=request.user)
-        .select_related("recitation__surah", "recitation__reciter")
-        .order_by("-played_at")
-    )
-    return render(request, "quraan/history.html", {"history": history})
+@require_POST
+def log_play(request):
+    recitation_id = request.POST.get("recitation_id")
+    if not recitation_id:
+        return JsonResponse({"ok": False, "error": "missing recitation_id"}, status=400)
+
+    recitation = get_object_or_404(Recitation, id=recitation_id)
+    PlayHistory.objects.create(user=request.user, recitation=recitation)
+    return JsonResponse({"ok": True})
+
 
 def juz_list(request):
     juzs = Juz.objects.all().order_by("number")
@@ -188,8 +244,14 @@ def juz_detail(request, pk):
     juz = get_object_or_404(Juz, pk=pk)
 
     surahs = Surah.objects.filter(juz=juz).order_by("number")
-    recitations = Recitation.objects.filter(surah__juz=juz).select_related(
-        "surah", "reciter"
+
+    recitations = (
+        Recitation.objects
+        .filter(surah__juz=juz)
+        .exclude(audio_file="")              # ✅ remove empty file rows
+        .select_related("surah", "reciter")
+        .order_by("surah__number", "reciter__name_en", "recitation_type")
+        .distinct()
     )
 
     return render(request, "quraan/juz_detail.html", {
@@ -211,11 +273,11 @@ def search(request):
             Q(name_en__icontains=q) | Q(name_ar__icontains=q)
         ).order_by("number")
 
-        # ✅ Reciters: match by name OR by having recitations in matched surahs
+        # ✅ FIXED: recitations__ (NOT recitation__)
         reciters = Reciter.objects.filter(
             Q(name_en__icontains=q) |
             Q(name_ar__icontains=q) |
-            Q(recitation__surah__in=surahs)
+            Q(recitations__surah__in=surahs)
         ).distinct().order_by("name_en")
 
         recitations = Recitation.objects.filter(
@@ -223,7 +285,7 @@ def search(request):
             Q(surah__name_ar__icontains=q) |
             Q(reciter__name_en__icontains=q) |
             Q(reciter__name_ar__icontains=q)
-        ).select_related("surah", "reciter")
+        ).select_related("surah", "reciter").distinct()
 
     return render(request, "quraan/search.html", {
         "q": q,
@@ -231,6 +293,7 @@ def search(request):
         "reciters": reciters,
         "recitations": recitations,
     })
+
 
 def reciter_detail(request, pk):
     reciter = get_object_or_404(Reciter, pk=pk)
@@ -497,10 +560,20 @@ def add_to_playlist(request):
     if request.method == "POST":
         recitation_id = request.POST.get("recitation_id")
         playlist_id = request.POST.get("playlist_id")
+
         recitation = get_object_or_404(Recitation, id=recitation_id)
         playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
-        playlist.items.create(recitation=recitation, position=playlist.items.count()+1)
+
+        next_order = (playlist.items.aggregate(Max("order"))["order__max"] or 0) + 1
+
+        PlaylistItem.objects.get_or_create(
+            playlist=playlist,
+            recitation=recitation,
+            defaults={"order": next_order}
+        )
+
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 @login_required
 def delete_playlist(request, pk):
@@ -510,3 +583,28 @@ def delete_playlist(request, pk):
         return redirect("playlists")
     return render(request, "quraan/confirm_delete_playlist.html", {"playlist": playlist})
 
+@login_required
+def history_list(request):
+    history = (
+        PlayHistory.objects
+        .filter(user=request.user)
+        .select_related("recitation__surah", "recitation__reciter")
+        .order_by("-played_at")
+    )
+    return render(request, "quraan/history.html", {"history": history})
+
+def record_play(request):
+    recitation_id = request.POST.get("recitation_id")
+
+    if not recitation_id:
+        return JsonResponse({"status": "error"}, status=400)
+
+    try:
+        recitation = Recitation.objects.get(id=recitation_id)
+        PlayHistory.objects.create(
+            user=request.user,
+            recitation=recitation
+        )
+        return JsonResponse({"status": "ok"})
+    except Recitation.DoesNotExist:
+        return JsonResponse({"status": "not_found"}, status=404)

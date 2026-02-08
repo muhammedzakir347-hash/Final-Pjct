@@ -4,50 +4,94 @@
 {% block title %}My History | Islamic Web{% endblock %}
 
 {% block content %}
-<h2>My Play History</h2>
+<div class="container">
 
-<div class="cards">
-  {% for h in history %}
-    <div class="card">
+  <div class="page-header">
+    <h1 class="page-title">My History</h1>
+    <p class="page-subtitle">Recently played recitations</p>
+  </div>
 
-      {% if h.recitation.surah.image %}
-        <div class="card-media">
-          <img src="{{ h.recitation.surah.get_image_url }}"
-               alt="{% t request h.recitation.surah 'name' %}">
-          <div class="play-overlay">
-            <a class="play-btn"
-               href="#"
-               data-play-one
-               data-audio="{{ h.recitation.audio_file.url }}"
-               data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %}">
-              ▶ Play
-            </a>
+  {% if history %}
+    <div class="section">
+      <div class="section-head">
+        <h3 class="mb-0">Plays</h3>
+        <div class="section-head-right">
+          <div class="results-count">
+            {{ history|length }} item{{ history|length|pluralize }}
           </div>
         </div>
-      {% endif %}
-
-      <p class="card-title">
-        {{ h.recitation.surah.number }} -
-        {% t request h.recitation.surah "name" %}
-      </p>
-
-      <p class="card-sub">
-        {% t request h.recitation.reciter "name" %}
-        • {{ h.played_at }}
-      </p>
-
-      <div class="card-actions">
-        <a href="#"
-           data-play-one
-           data-audio="{{ h.recitation.audio_file.url }}"
-           data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %}">
-          ▶ Play
-        </a>
       </div>
 
+      <div class="cards">
+        {% for h in history %}
+          <div class="card recitation-card">
+
+            {% if h.recitation.surah.image %}
+              <div class="card-media">
+                <img src="{{ h.recitation.surah.image_url }}" alt="{% t request h.recitation.surah 'name' %}">
+                <div class="play-overlay">
+                  <button
+                    type="button"
+                    class="btn btn-primary play-btn"
+                    data-play-one
+                    data-audio="{{ h.recitation.audio_url }}"
+                    data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %} ({{ h.recitation.recitation_type }})"
+                    aria-label="Play">
+                    ▶
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="card-body">
+              <div class="card-header">
+                <h3 class="card-title">
+                  {{ h.recitation.surah.number }} - {% t request h.recitation.surah "name" %}
+                </h3>
+
+                <p class="card-subtitle">
+                  <span aria-hidden="true">👤</span> {% t request h.recitation.reciter "name" %}
+                </p>
+
+                <div class="card-meta">
+                  <span class="badge badge-type">{{ h.recitation.recitation_type|title }}</span>
+                  <span class="badge badge-juz" title="Played at">{{ h.played_at }}</span>
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  data-play-one
+                  data-audio="{{ h.recitation.audio_url }}"
+                  data-title="{{ h.recitation.surah.number }} - {% t request h.recitation.surah 'name' %} — {% t request h.recitation.reciter 'name' %} ({{ h.recitation.recitation_type }})">
+                  Play
+                </button>
+
+                <a href="{% url 'surah_detail' h.recitation.surah.id %}" class="btn btn-secondary">
+                  Surah
+                </a>
+
+                <a href="{% url 'recitation_play' h.recitation.id %}" class="btn btn-outline btn-sm">
+                  Details
+                </a>
+              </div>
+            </div>
+
+          </div>
+        {% endfor %}
+      </div>
     </div>
-  {% empty %}
-    <p>No history yet.</p>
-  {% endfor %}
+
+  {% else %}
+    <div class="no-results">
+      <div class="no-results-icon" aria-hidden="true">🕒</div>
+      <h3>No history yet</h3>
+      <p>Start playing recitations and your history will appear here.</p>
+      <a href="{% url 'recitation_list' %}" class="btn btn-primary">Browse Recitations</a>
+    </div>
+  {% endif %}
+
 </div>
 {% endblock %}

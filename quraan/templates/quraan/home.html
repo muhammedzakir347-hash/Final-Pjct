@@ -7,52 +7,194 @@
 
 <h2>Top Reciters</h2>
 
-<div class="cards">
+<div class="cards" style="
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 20px;
+">
   {% for r in reciters %}
-    <div class="card">
+    <div class="card" style="
+      text-align:center;
+      border:none;
+      box-shadow:none;
+      background:transparent;
+    ">
       {% if r.image %}
-        <div class="card-media">
-          <img src="{{ r.get_image_url }}" alt="{% t request r 'name' %}">
-          <div class="play-overlay">
-            <a class="play-btn" href="{% url 'reciter_detail' r.id %}">Open</a>
-          </div>
-        </div>
+        <a href="{% url 'reciter_detail' r.id %}">
+          <img
+            src="{{ r.image.url }}"
+            alt="{% t request r 'name' %}"
+            style="
+              width:100px;
+              height:100px;
+              object-fit:cover;
+              border-radius:50%;
+              box-shadow:0 4px 10px rgba(0,0,0,0.15);
+              margin-bottom:10px;
+            "
+          >
+        </a>
       {% endif %}
 
-      <p class="card-title">{% t request r "name" %}</p>
-      <p class="card-sub">{% t request r "country" %}</p>
+      <p style="font-weight:700;margin:0;">
+        {% t request r "name" %}
+      </p>
 
+      <p style="font-size:13px;opacity:.7;margin:0;">
+        {% t request r "country" %}
+      </p>
     </div>
   {% empty %}
     <p>No reciters yet.</p>
   {% endfor %}
 </div>
 
-<hr>
+<hr class="hr">
 
-<h2>Surahs</h2>
+<style>
+/* Horizontal scroll row */
+.h-row-wrap { margin: 14px 0 24px; }
+.h-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 6px 2px 12px;
+  scroll-snap-type: x mandatory;
+}
+.h-row::-webkit-scrollbar { height: 10px; }
+.h-row::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+.h-item { flex: 0 0 260px; scroll-snap-align: start; }
 
-<div class="cards">
-  {% for s in surahs %}
-    <div class="card">
+/* Optional: make cards a bit tighter in rows */
+.h-item .card { margin: 0; }
+.section-gap { margin-top: 26px; }
 
-      {% if s.image %}
-        <div class="card-media">
-          <img src="{{ s.get_image_url }}" alt="{% t request s 'name' %}">
-          <div class="play-overlay">
-            <a class="play-btn" href="{% url 'surah_detail' s.id %}">Open</a>
+/* Section header with button */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.section-header h2 {
+  margin: 0;
+}
+.view-all-btn {
+  background-color: #10b981;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+.view-all-btn:hover {
+  background-color: #059669;
+  color: white;
+  text-decoration: none;
+}
+</style>
+
+<!-- ================= TOP SURAHS (20) HORIZONTAL SCROLL ================= -->
+<div class="section-gap">
+  <div class="section-header">
+    <h2>Top Surahs</h2>
+    {% if top_surahs %}
+      <a href="{% url 'recitation_list' %}" class="view-all-btn">Browse All</a>
+    {% endif %}
+  </div>
+
+  <div class="h-row-wrap">
+    <div class="h-row">
+      {% for s in top_surahs %}
+        <div class="h-item">
+          <div class="card">
+            {% if s.image %}
+              <div class="card-media">
+                <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+                <div class="play-overlay">
+                  <a class="play-btn" href="{% url 'surah_detail' s.id %}">Open</a>
+                </div>
+              </div>
+            {% endif %}
+
+            <p class="card-title">
+              {{ s.number }} - {% t request s "name" %}
+            </p>
           </div>
         </div>
-      {% endif %}
-
-      <p class="card-title">
-        {{ s.number }} - {% t request s "name" %}
-      </p>
-
+      {% empty %}
+        <p>No surahs yet.</p>
+      {% endfor %}
     </div>
-  {% empty %}
-    <p>No surahs yet.</p>
-  {% endfor %}
+  </div>
+</div>
+
+<!-- ================= RECENTLY VIEWED RECITERS (10) ================= -->
+<div class="section-gap">
+  <h2>Recently Viewed Reciters</h2>
+
+  {% if request.user.is_authenticated %}
+    <div class="h-row-wrap">
+      <div class="h-row">
+        {% for r in recent_reciters %}
+          <div class="h-item">
+            <div class="card">
+              {% if r.image %}
+                <div class="card-media">
+                  <img src="{{ r.image.url }}" alt="{% t request r 'name' %}">
+                  <div class="play-overlay">
+                    <a class="play-btn" href="{% url 'reciter_detail' r.id %}">Open</a>
+                  </div>
+                </div>
+              {% endif %}
+
+              <p class="card-title">{% t request r "name" %}</p>
+              <p class="card-sub">{% t request r "country" %}</p>
+            </div>
+          </div>
+        {% empty %}
+          <p>You have no recently viewed reciters yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <p>Login to see your recently viewed reciters.</p>
+  {% endif %}
+</div>
+
+<!-- ================= RECENTLY VIEWED SURAHS (10) ================= -->
+<div class="section-gap">
+  <h2>Recently Viewed Surahs</h2>
+
+  {% if request.user.is_authenticated %}
+    <div class="h-row-wrap">
+      <div class="h-row">
+        {% for s in recent_surahs %}
+          <div class="h-item">
+            <div class="card">
+              {% if s.image %}
+                <div class="card-media">
+                  <img src="{{ s.image.url }}" alt="{% t request s 'name' %}">
+                  <div class="play-overlay">
+                    <a class="play-btn" href="{% url 'surah_detail' s.id %}">Open</a>
+                  </div>
+                </div>
+              {% endif %}
+
+              <p class="card-title">
+                {{ s.number }} - {% t request s "name" %}
+              </p>
+            </div>
+          </div>
+        {% empty %}
+          <p>You have no recently viewed surahs yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <p>Login to see your recently viewed surahs.</p>
+  {% endif %}
 </div>
 
 {% endblock %}

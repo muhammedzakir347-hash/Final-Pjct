@@ -10,7 +10,7 @@
 <div class="surah-header">
   {% if surah.image %}
     <div class="surah-image">
-      <img src="{{ surah.get_image_url }}" alt="{% t request surah 'name' %}">
+      <img src="{{ surah.image.url }}" alt="{% t request surah 'name' %}">
     </div>
   {% endif %}
 
@@ -19,25 +19,32 @@
     <p><b>Total ayahs:</b> {{ surah.total_ayahs }}</p>
     <p><b>Revelation type:</b> {{ surah.get_revelation_type_display }}</p>
 
-    <div class="play-all-container">
-      <button class="play-all-btn" type="button" data-play-all data-queue-script="queue_surah">
-        ▶ Play All
-      </button>
-    </div>
+    {% if recitations %}
+      <div class="play-all-container">
+        <button class="play-all-btn" type="button" data-play-all data-queue-script="queue_surah">
+          ▶ Play All
+        </button>
+      </div>
+    {% endif %}
   </div>
 </div>
 
+{% if recitations %}
 <script id="queue_surah" type="application/json">
 [
 {% for r in recitations %}
-  {
-    "audio": "{{ r.audio_file.url }}",
-    "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
-  }{% if not forloop.last %},{% endif %}
+  {% if r.audio_file %}
+    {% if not forloop.first %},{% endif %}
+    {
+      "id": "{{ r.id }}",
+      "audio": "{{ r.audio_file.url }}",
+      "title": "{{ r.surah.number }} - {% t request r.surah 'name' %} — {% t request r.reciter 'name' %} ({{ r.recitation_type }})"
+    }
+  {% endif %}
 {% endfor %}
 ]
 </script>
-
+{% endif %}
 
 <h3>Recitations</h3>
 
@@ -46,66 +53,84 @@
   <div class="card">
 
     {% if surah.image %}
-    <div class="card-media">
-      <img src="{{ surah.get_image_url }}" alt="{% t request surah 'name' %}">
-      <div class="play-overlay">
-        <a href="#"
-           data-play-one
-           data-audio="{{ rec.audio_file.url }}"
-           data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
-          ▶ Play
-        </a>
+      <div class="card-media">
+        <img src="{{ surah.image.url }}" alt="{% t request surah 'name' %}">
+        <div class="play-overlay">
+          {% if rec.audio_file %}
+            <a href="#"
+               data-play-one
+               data-recitation-id="{{ rec.id }}"
+               data-audio="{{ rec.audio_file.url }}"
+               data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})">
+              ▶ Play
+            </a>
+          {% endif %}
+        </div>
       </div>
-    </div>
     {% endif %}
 
     <p class="card-title">
       {% t request rec.reciter "name" %} ({{ rec.recitation_type }})
     </p>
 
-    <!-- ✅ UPDATED CARD ACTIONS -->
     <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
 
-      <!-- ▶ Play -->
-      <a href="#"
-         data-play-one
-         data-audio="{{ rec.audio_file.url }}"
-         data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
-         style="padding:6px 12px;border-radius:8px;background:#1f2933;color:#fff;text-decoration:none;">
-        ▶ Play
-      </a>
+      {% if rec.audio_file %}
+        <a href="#"
+           data-play-one
+           data-recitation-id="{{ rec.id }}"
+           data-audio="{{ rec.audio_file.url }}"
+           data-title="{{ rec.surah.number }} - {% t request rec.surah 'name' %} — {% t request rec.reciter 'name' %} ({{ rec.recitation_type }})"
+           style="padding:6px 12px;border-radius:8px;background:#1f2933;color:#fff;text-decoration:none;">
+          ▶ Play
+        </a>
+      {% else %}
+        <span style="padding:6px 12px;border-radius:8px;background:#e5e7eb;color:#374151;">
+          No Audio
+        </span>
+      {% endif %}
 
       {% if request.user.is_authenticated %}
 
-      <!-- ❤️ Favorite -->
-      <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
-        {% csrf_token %}
-        <input type="hidden" name="recitation_id" value="{{ rec.id }}">
-        <button type="submit"
-                style="padding:6px 12px;border-radius:8px;border:none;background:#f43f5e;color:#fff;cursor:pointer;">
-          ❤️ Favorite
-        </button>
-      </form>
+        <!-- ❤️ Favorite -->
+        <form method="post" action="{% url 'add_to_favorites' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+          <button type="submit"
+                  style="padding:6px 12px;border-radius:8px;border:none;background:#f43f5e;color:#fff;cursor:pointer;">
+            ❤️ Favorite
+          </button>
+        </form>
 
-      <!-- ➕ Add to Playlist -->
-      <form method="post" action="{% url 'add_to_playlist' %}"
-            style="display:inline-flex;gap:6px;align-items:center;">
-        {% csrf_token %}
-        <input type="hidden" name="recitation_id" value="{{ rec.id }}">
+        <!-- ➕ Add to Playlist -->
+        <form method="post" action="{% url 'add_to_playlist' %}"
+              style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="recitation_id" value="{{ rec.id }}">
 
-        <select name="playlist_id" required
-                style="padding:6px 8px;border-radius:8px;border:1px solid #ccc;">
-          <option value="">Playlist</option>
-          {% for p in request.user.playlist_set.all %}
-            <option value="{{ p.id }}">{{ p.name_en }}</option>
-          {% endfor %}
-        </select>
+          {% if request.user.playlists.all %}
+            <select name="playlist_id" required
+                    style="padding:6px 8px;border-radius:8px;border:1px solid #ccc;min-width:160px;">
+              <option value="">Select Playlist</option>
+              {% for p in request.user.playlists.all %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
 
-        <button type="submit"
-                style="padding:6px 10px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">
-          ➕ Add
-        </button>
-      </form>
+            <button type="submit"
+                    style="padding:6px 10px;border-radius:8px;border:none;background:#10b981;color:#fff;cursor:pointer;">
+              ➕ Add
+            </button>
+          {% else %}
+            <span style="padding:6px 10px;border-radius:8px;background:#fff3cd;border:1px solid #ffeeba;">
+              No playlists yet
+            </span>
+            <a href="{% url 'playlists' %}"
+               style="padding:6px 10px;border-radius:8px;background:#10b981;color:#fff;text-decoration:none;">
+              Create Playlist
+            </a>
+          {% endif %}
+        </form>
 
       {% endif %}
     </div>

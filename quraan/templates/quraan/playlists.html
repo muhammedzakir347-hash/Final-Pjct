@@ -1,51 +1,45 @@
 {% extends "base.html" %}
-{% load lang %}
 
 {% block title %}My Playlists | Islamic Web{% endblock %}
 
 {% block content %}
-<h2>My Playlists</h2>
+<div class="container">
 
-<p>
-  <a href="{% url 'create_playlist' %}" style="padding:8px 16px; background:#3b82f6; color:#fff; border-radius:12px; text-decoration:none;">
-    ➕ Create New Playlist
-  </a>
-</p>
+  <div class="page-header">
+    <h1 class="page-title">My Playlists</h1>
+    <p class="page-subtitle">Your saved collections</p>
+  </div>
 
-<div class="cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:12px;">
-  {% for p in playlists %}
-    <div class="card" style="background:#fff; border:1px solid #e6e6e6; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-      
-      <p class="card-title" style="font-weight:700; margin:0 0 8px 0;">
-        <a href="{% url 'playlist_detail' p.id %}" style="text-decoration:none; color:#111;">
-          {% t request p "name" %}
-        </a>
-      </p>
+  <div class="section-head">
+    <h3 class="mb-0">Playlists</h3>
+    <a href="{% url 'create_playlist' %}" class="btn btn-primary btn-sm">➕ Create</a>
+  </div>
 
-      <div class="card-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:auto;">
-        <!-- Open Playlist -->
-        <a href="{% url 'playlist_detail' p.id %}" style="padding:6px 12px; border-radius:8px; background:#1f2933; color:#fff; text-decoration:none;">
-          📂 Open
-        </a>
+  <div class="cards">
+    {% for p in playlists %}
+      <div class="card playlist-card">
+        <div class="card-body">
+          <h3 class="card-title">
+            <a href="{% url 'playlist_detail' p.id %}">{{ p.name }}</a>
+          </h3>
+          <p class="card-sub">Created: {{ p.created_at|date:"Y-m-d" }}</p>
+        </div>
 
-        <!-- Play All (if you want to implement JS queue later) -->
-        <button type="button" class="play-all-btn" data-playlist-id="{{ p.id }}" 
-                style="padding:6px 12px; border-radius:8px; background:#3b82f6; color:#fff; border:none; cursor:pointer;">
-          ▶ Play All
-        </button>
+        <div class="card-actions">
+          <a href="{% url 'playlist_detail' p.id %}" class="btn btn-secondary btn-sm">📂 Open</a>
 
-        <!-- Delete Playlist (optional) -->
-        <form method="post" action="{% url 'delete_playlist' p.id %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" style="padding:6px 12px; border-radius:8px; border:none; background:#ef4444; color:#fff; cursor:pointer;">
-            ❌ Delete
-          </button>
-        </form>
+          <form method="post" action="{% url 'delete_playlist' p.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">❌ Delete</button>
+          </form>
+        </div>
       </div>
+    {% empty %}
+      <div class="empty-state">
+        <p>No playlists yet.</p>
+      </div>
+    {% endfor %}
+  </div>
 
-    </div>
-  {% empty %}
-    <p>No playlists yet.</p>
-  {% endfor %}
 </div>
 {% endblock %}
